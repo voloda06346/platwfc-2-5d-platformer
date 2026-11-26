@@ -3,43 +3,130 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <meta name="theme-color" content="#101827">
+  <meta name="theme-color" content="#1b4f85">
   <title>PLATWFC — 3D Platformer</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <main class="shell">
-    <header>
-      <div class="brand">PLAT<span>WFC</span></div>
-      <div class="status"><i></i><span id="network-status">OFFLINE PREVIEW</span></div>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="PLATWFC главная"><span class="brand-mark">P</span><span>PLAT<span class="brand-accent">WFC</span></span></a>
+      <nav class="top-actions" aria-label="Игровое меню">
+        <button id="music-toggle" class="menu-button sound-button" type="button" aria-pressed="false">♫ МУЗЫКА: ВЫКЛ</button>
+        <button id="workshop-open" class="menu-button workshop-button" type="button">✦ WORKSHOP</button>
+        <div class="status"><i></i><span id="network-status">CONNECTING</span></div>
+      </nav>
     </header>
+
     <section class="intro">
-      <p class="eyebrow">3D ONLINE PLATFORMER</p>
-      <h1>Прыгай в новый<br><span>трёхмерный мир.</span></h1>
-      <p>Исследуй настоящую 3D-сцену, прыгай по парящим платформам и подключайся к игрокам через комнаты PLATWFC.</p>
-      <div class="player-tools">
+      <div class="intro-copy">
+        <p class="eyebrow">PLATWFC · 3D ADVENTURE</p>
+        <h1>ТВОЁ СЛЕДУЮЩЕЕ<br><span>ПЛАТФОРМЕННОЕ</span><br>ПРИКЛЮЧЕНИЕ</h1>
+        <p>Беги по парящим островам, собирай звёздные монеты и исследуй новые миры вместе с друзьями.</p>
+      </div>
+      <div class="quick-panel">
+        <div class="quick-title">ИГРОВОЙ ПРОФИЛЬ</div>
         <label for="player-name">ТВОЙ НИК</label>
-        <input id="player-name" maxlength="16" autocomplete="nickname" spellcheck="false" value="Player">
-        <button id="apply-name" type="button">ПРИМЕНИТЬ</button>
-      </div>
-    </section>
-    <section class="game-frame">
-      <canvas id="game" aria-label="Трёхмерный игровой мир PLATWFC"></canvas>
-      <div class="hud"><span>WORLD 01 · 3D</span><span id="coords">X 0 · Z 0</span><span id="score">COINS 0</span></div>
-      <div class="hint">WASD / СТРЕЛКИ — движение · SHIFT — спринт · SHIFT + SPACE — длинный прыжок · E — бросок в воздухе · Q — удар вниз · R — кувырок · МЫШЬ — камера</div>
-      <div class="touch-controls" aria-label="Сенсорное управление">
-        <div class="dpad">
-          <button data-key="w" aria-label="Вперёд">▲</button>
-          <div><button data-key="a" aria-label="Влево">◀</button><button data-key="s" aria-label="Назад">▼</button><button data-key="d" aria-label="Вправо">▶</button></div>
+        <div class="name-row">
+          <input id="player-name" maxlength="16" autocomplete="nickname" spellcheck="false" value="Player">
+          <button id="apply-name" type="button" aria-label="Применить ник">✓</button>
         </div>
-        <div class="actions">
-          <div class="action-row"><button data-key="e" class="move-action">DIVE</button><button data-key="q" class="move-action">SLAM</button><button data-key="r" class="move-action">ROLL</button></div>
-          <div class="action-row"><button data-key="space" class="jump">JUMP</button><button data-key="boost" class="boost">RUN</button></div>
+        <div class="quick-divider"></div>
+        <div class="quick-actions">
+          <button id="check-data" class="small-action" type="button">↓ ПРОВЕРИТЬ ДАННЫЕ</button>
+          <span id="data-status">Данные игры загружаются с локального сервера</span>
         </div>
       </div>
     </section>
-    <footer><span>PLATWFC NETWORK</span><span>BUILD 0.4.0 · SKELETAL MOVEMENT</span></footer>
+
+    <section class="game-section" aria-label="Игровой мир">
+      <div class="section-heading"><span>WORLD 01</span><span class="section-stars">✦ ✦ ✦</span><span>ОДИНОЧНАЯ ИГРА / ONLINE</span></div>
+      <div class="game-frame">
+        <canvas id="game" aria-label="Трёхмерный игровой мир PLATWFC"></canvas>
+        <div class="hud">
+          <span class="hud-world">WORLD 01</span>
+          <span id="coords">X 0 · Z 0</span>
+          <span id="score">★ 0</span>
+        </div>
+        <div class="hint">WASD / СТРЕЛКИ — ДВИЖЕНИЕ · SHIFT — СПРИНТ · SPACE — ПРЫЖОК · МЫШЬ — КАМЕРА</div>
+        <div class="touch-controls" aria-label="Сенсорное управление">
+          <div class="dpad">
+            <button data-key="w" aria-label="Вперёд">▲</button>
+            <div><button data-key="a" aria-label="Влево">◀</button><button data-key="s" aria-label="Назад">▼</button><button data-key="d" aria-label="Вправо">▶</button></div>
+          </div>
+          <div class="actions">
+            <div class="action-row"><button data-key="e" class="move-action">DIVE</button><button data-key="q" class="move-action">SLAM</button><button data-key="r" class="move-action">ROLL</button></div>
+            <div class="action-row"><button data-key="space" class="jump">JUMP</button><button data-key="boost" class="boost">RUN</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="controls-strip">
+        <span><b>SHIFT + SPACE</b> ДЛИННЫЙ ПРЫЖОК</span>
+        <span><b>E</b> ВОЗДУШНЫЙ БРОСОК</span>
+        <span><b>Q</b> УДАР ВНИЗ</span>
+        <span><b>R</b> КУВЫРОК</span>
+      </div>
+    </section>
+
+    <footer><span>PLATWFC NETWORK</span><span>BUILD 0.5.0 · SOUND & WORKSHOP</span><span>ORIGINAL GAME CONTENT</span></footer>
   </main>
+
+  <section id="workshop-modal" class="modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="workshop-title">
+    <div class="modal-backdrop" id="workshop-backdrop"></div>
+    <div class="workshop-panel">
+      <div class="workshop-head">
+        <div>
+          <p class="eyebrow">PLATWFC COMMUNITY</p>
+          <h2 id="workshop-title">✦ WORKSHOP</h2>
+          <p>Новые острова, костюмы и музыкальные темы от сообщества.</p>
+        </div>
+        <button id="workshop-close" class="close-button" type="button" aria-label="Закрыть">×</button>
+      </div>
+      <div class="workshop-toolbar">
+        <span id="workshop-status">ПОДКЛЮЧЕНИЕ К ЛОКАЛЬНОЙ МАСТЕРСКОЙ…</span>
+        <button id="workshop-refresh" class="small-action" type="button">↻ ОБНОВИТЬ</button>
+      </div>
+      <div class="workshop-columns">
+        <section>
+          <div class="subheading">РЕКОМЕНДУЕМЫЕ ДОПОЛНЕНИЯ</div>
+          <div id="workshop-catalog" class="addon-grid"></div>
+        </section>
+        <section>
+          <div class="subheading">УСТАНОВЛЕННЫЕ ДОПОЛНЕНИЯ</div>
+          <div id="workshop-installed" class="installed-list"></div>
+        </section>
+      </div>
+      <div class="import-box">
+        <div>
+          <strong>СВОЁ ДОПОЛНЕНИЕ</strong>
+          <p>Импортируй JSON-пак PLATWFC. Сервер проверит его и сохранит в папку <code>dlc-workshop</code> рядом с игрой.</p>
+        </div>
+        <input id="addon-file" type="file" accept=".json,application/json" hidden>
+        <button id="addon-import" class="import-button" type="button">＋ ИМПОРТИРОВАТЬ JSON</button>
+      </div>
+      <details class="format-help">
+        <summary>Формат собственного дополнения</summary>
+        <pre>{
+  "id": "my-first-island",
+  "name": "My First Island",
+  "author": "Player",
+  "version": "1.0.0",
+  "description": "A small new island",
+  "type": "level",
+  "platforms": [
+    {
+      "x": -22, "z": -56,
+      "width": 5, "depth": 5,
+      "height": 5, "color": "#72d7a0"
+    }
+  ]
+}</pre>
+        <p>Поддерживаются типы <code>level</code>, <code>cosmetic</code> и <code>music</code>. Скрипты и исполняемый код в DLC не принимаются.</p>
+      </details>
+      <div class="workshop-foot">Локальная мастерская доступна при запуске через START-PLATWFC.bat. Пакеты сохраняются только на этом компьютере.</div>
+    </div>
+  </section>
+
   <script type="module" src="./src/game.js"></script>
 </body>
 </html>
