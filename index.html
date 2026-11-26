@@ -4,24 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <meta name="theme-color" content="#1b4f85">
-  <script type="text/javascript">
-  (function () {
-    var ua = navigator.userAgent || "";
-    var canvas = document.createElement("canvas");
-    var has2d = false;
-    var hasWebGL = false;
-    try {
-      has2d = !!(canvas.getContext && canvas.getContext("2d"));
-      hasWebGL = !!(canvas.getContext && (canvas.getContext("webgl") || canvas.getContext("experimental-webgl")));
-    } catch (e) {}
-    var moduleProbe = document.createElement("script");
-    var hasModules = ("noModule" in moduleProbe);
-    var isWii = (/Nintendo Wii/i).test(ua);
-    if (isWii || !has2d || !hasWebGL || !hasModules) {
-      window.location.replace("./legacy.html");
-    }
-  }());
-  </script>
   <title>PLATWFC — 3D Platformer</title>
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -38,12 +20,6 @@
         <div class="status"><i></i><span id="network-status">CONNECTING</span></div>
       </nav>
     </header>
-
-    <nav class="version-switch" aria-label="Выбор версии игры">
-      <a class="version-link is-current" href="./index.html">ОБЫЧНАЯ 3D</a>
-      <a class="version-link" href="./legacy.html">LEGACY 2.5D</a>
-      <a class="version-all" href="./versions.html">ВСЕ ВЕРСИИ ↗</a>
-    </nav>
 
     <section class="intro">
       <div class="intro-copy">
@@ -101,7 +77,7 @@
       </div>
     </section>
 
-    <footer><span>PLATWFC NETWORK</span><span>BUILD 0.6.0 · DRAG & LEGACY</span><span><a href="./index.html">ОБЫЧНАЯ 3D</a> · <a href="./legacy.html">LEGACY 2.5D</a> · <a href="./versions.html">ВЫБОР ВЕРСИИ</a></span><span>ORIGINAL GAME CONTENT</span></footer>
+    <footer><span>PLATWFC NETWORK</span><span>BUILD 0.6.0 · FULL 3D</span><span>THREE.JS · WEBGL</span><span>ORIGINAL GAME CONTENT</span></footer>
   </main>
 
   <section id="workshop-modal" class="modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="workshop-title">
