@@ -151,11 +151,15 @@ wss.on("connection", socket => {
       const now = Date.now();
       if (now - client.lastUpdate < 40) return;
       client.lastUpdate = now;
+      const allowedActions = new Set(["idle", "run", "sprint", "jump", "longJump", "dive", "groundPound", "roll"]);
       client.state = {
         x: validPosition(message.x),
         z: validPosition(message.z),
         y: Math.max(0, Math.min(100, validPosition(message.y))),
-        facing: validPosition(message.facing)
+        facing: validPosition(message.facing),
+        speed: Math.max(0, Math.min(14, validPosition(message.speed))),
+        grounded: message.grounded !== false,
+        action: allowedActions.has(message.action) ? message.action : "idle"
       };
       broadcast(rooms.peers(client.roomId, client.id), {
         type: "peer-state",
