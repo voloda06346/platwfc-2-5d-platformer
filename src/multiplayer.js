@@ -11,31 +11,25 @@ export class MultiplayerClient extends EventTarget {
 
   connect(url, { name = "Player", room = "lobby" } = {}) {
     if (!url) return;
-    if (this.socket && this.socket.readyState < WebSocket.CLOSING) {
-      this.socket.close();
-    }
-
+    if (this.socket && this.socket.readyState < WebSocket.CLOSING) this.socket.close();
     this.joined = false;
     this.dispatchEvent(new Event("connecting"));
 
     try {
       const socket = new WebSocket(url);
       this.socket = socket;
-
       socket.addEventListener("open", () => {
         if (this.socket !== socket) return;
         this.connected = true;
         socket.send(JSON.stringify({
           type: "join",
-          name: String(name).slice(0, 16),
-          room: String(room).slice(0, 24)
+          name: String(name).replace(/[<>\u0000-\u001f]/g, "").trim().slice(0, 16) || "Player",
+          room: String(room).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 24) || "lobby"
         }));
       });
-
       socket.addEventListener("message", event => {
         if (this.socket === socket) this.onMessage(event.data);
       });
-
       socket.addEventListener("close", () => {
         if (this.socket !== socket) return;
         this.connected = false;
@@ -44,11 +38,8 @@ export class MultiplayerClient extends EventTarget {
         this.dispatchEvent(new Event("disconnected"));
         this.dispatchEvent(new Event("players-changed"));
       });
-
       socket.addEventListener("error", () => {
-        if (this.socket === socket) {
-          this.dispatchEvent(new Event("connection-error"));
-        }
+        if (this.socket === socket) this.dispatchEvent(new Event("connection-error"));
       });
     } catch (error) {
       console.warn("PLATWFC connection failed:", error);
@@ -61,17 +52,12 @@ export class MultiplayerClient extends EventTarget {
 
   onMessage(raw) {
     let message;
-    try {
-      message = JSON.parse(raw);
-    } catch {
-      return;
-    }
+    try { message = JSON.parse(raw); } catch { return; }
 
     if (message.type === "welcome") {
       this.id = message.id;
       return;
     }
-
     if (message.type === "joined") {
       this.joined = true;
       this.peers.clear();
@@ -82,7 +68,6 @@ export class MultiplayerClient extends EventTarget {
       this.dispatchEvent(new Event("players-changed"));
       return;
     }
-
     if (message.type === "peer-joined" || message.type === "peer-state") {
       const player = message.player;
       if (player && player.id !== this.id) {
@@ -91,13 +76,11 @@ export class MultiplayerClient extends EventTarget {
       }
       return;
     }
-
     if (message.type === "peer-left") {
       this.peers.delete(message.id);
       this.dispatchEvent(new Event("players-changed"));
       return;
     }
-
     if (message.type === "error") {
       console.warn("PLATWFC:", message.message || message.code);
       this.dispatchEvent(new CustomEvent("server-error", {
@@ -108,20 +91,17 @@ export class MultiplayerClient extends EventTarget {
 
   sendState(state) {
     const now = performance.now();
-    if (
-      !this.joined ||
-      !this.socket ||
-      this.socket.readyState !== WebSocket.OPEN ||
-      now - this.lastSent < 50
-    ) return;
-
+    if (!this.joined || !this.socket || this.socket.readyState !== WebSocket.OPEN || now - this.lastSent < 50) return;
     this.lastSent = now;
     this.socket.send(JSON.stringify({
       type: "state",
       x: state.x,
       z: state.z,
       y: state.y,
-      facing: state.facing || 0
+      facing: state.facing || 0,
+      speed: state.speed || 0,
+      grounded: state.grounded !== false,
+      action: state.action || "idle"
     }));
   }
 
