@@ -638,6 +638,307 @@ function updateCoins(elapsed, dt) {
   if (scoreLabel) scoreLabel.textContent = "COINS " + score;
 }
 
+
+const workshopModal = document.querySelector("#workshop-modal");
+const workshopOpenButton = document.querySelector("#workshop-open");
+const workshopCloseButton = document.querySelector("#workshop-close");
+const workshopBackdrop = document.querySelector("#workshop-backdrop");
+const workshopStatus = document.querySelector("#workshop-status");
+const workshopCatalog = document.querySelector("#workshop-catalog");
+const workshopInstalled = document.querySelector("#workshop-installed");
+const workshopRefreshButton = document.querySelector("#workshop-refresh");
+const workshopImportButton = document.querySelector("#addon-import");
+const workshopFileInput = document.querySelector("#addon-file");
+const starterButton = document.querySelector("#download-starter");
+const musicButton = document.querySelector("#music-toggle");
+const checkDataButton = document.querySelector("#check-data");
+const dataStatus = document.querySelector("#data-status");
+const appliedAddonIds = new Set();
+let installedAddons = [];
+
+const workshopPacks = [
+  {
+    schema: 1,
+    id: "cloud-garden-route",
+    name: "Cloud Garden Route",
+    author: "PLATWFC Team",
+    version: "1.0.0",
+    description: "Три новые платформы продолжают маршрут над облаками.",
+    type: "level",
+    platforms: [
+      { x: -21, z: -56, width: 5.4, depth: 5.4, height: 5.15, color: "#80dba4" },
+      { x: -27, z: -62.5, width: 5.2, depth: 5.2, height: 5.55, color: "#91e8b2" },
+      { x: -22, z: -69, width: 6.2, depth: 6.2, height: 6.1, color: "#75c9e9" }
+    ]
+  },
+  {
+    schema: 1,
+    id: "mint-comet-suit",
+    name: "Mint Comet Suit",
+    author: "PLATWFC Team",
+    version: "1.0.0",
+    description: "Мятный костюм с золотистыми акцентами для персонажей.",
+    type: "cosmetic",
+    bodyColor: "#269b83",
+    accentColor: "#ffe17c"
+  },
+  {
+    schema: 1,
+    id: "sunset-sky-score",
+    name: "Sunset Sky Score",
+    author: "PLATWFC Audio Lab",
+    version: "1.0.0",
+    description: "Новая оригинальная синтезированная музыкальная тема на закатном ладу.",
+    type: "music",
+    mood: "sunset"
+  }
+];
+
+const typeLabels = {
+  level: "НОВЫЙ МИР",
+  cosmetic: "КОСТЮМ",
+  music: "МУЗЫКА"
+};
+const typeIcons = { level: "☁", cosmetic: "✦", music: "♫" };
+
+function setAvatarColors(avatar, bodyColor, accentColor) {
+  const appearance = avatar?.userData?.appearance;
+  if (!appearance) return;
+  if (bodyColor) appearance.cloth.color.set(bodyColor);
+  if (accentColor) appearance.accent.color.set(accentColor);
+}
+
+function applyAddon(addon) {
+  if (!addon || appliedAddonIds.has(addon.id)) return;
+  appliedAddonIds.add(addon.id);
+
+  if (addon.type === "level" && Array.isArray(addon.platforms)) {
+    for (const platform of addon.platforms) {
+      const color = Number.parseInt(String(platform.color || "#70d49a").slice(1), 16);
+      addPlatform(platform.x, platform.z, platform.width, platform.depth, platform.height, color);
+    }
+  }
+
+  if (addon.type === "cosmetic") {
+    setAvatarColors(playerMesh, addon.bodyColor, addon.accentColor);
+    for (const remote of remoteMeshes.values()) {
+      setAvatarColors(remote.avatar, addon.bodyColor, addon.accentColor);
+    }
+  }
+
+  if (addon.type === "music") audio.setMood(addon.mood);
+}
+
+function showWorkshopMessage(message, isError = false) {
+  if (!workshopStatus) return;
+  workshopStatus.textContent = message;
+  workshopStatus.style.color = isError ? "#ffae9e" : "#c6deee";
+}
+
+function makeAddonCard(addon, isInstalled) {
+  const card = document.createElement("article");
+  card.className = "addon-card";
+
+  const icon = document.createElement("div");
+  icon.className = "addon-icon";
+  icon.textContent = typeIcons[addon.type] || "✦";
+
+  const title = document.createElement("h3");
+  title.textContent = addon.name;
+
+  const description = document.createElement("p");
+  description.textContent = addon.description || "Дополнение для PLATWFC.";
+
+  const meta = document.createElement("div");
+  meta.className = "addon-meta";
+  meta.textContent = `${typeLabels[addon.type] || "DLC"} · ${addon.author || "Community"} · v${addon.version || "1.0.0"}`;
+
+  const button = document.createElement("button");
+  button.className = "install-button";
+  button.type = "button";
+  button.textContent = isInstalled ? "УСТАНОВЛЕНО" : "↓ УСТАНОВИТЬ";
+  button.disabled = isInstalled || !isLocalHost;
+  button.addEventListener("click", () => installAddon(addon));
+
+  card.append(icon, title, description, meta, button);
+  return card;
+}
+
+function renderWorkshop() {
+  if (!workshopCatalog || !workshopInstalled) return;
+  workshopCatalog.replaceChildren();
+  workshopInstalled.replaceChildren();
+
+  const installedIds = new Set(installedAddons.map(addon => addon.id));
+  for (const addon of workshopPacks) {
+    workshopCatalog.append(makeAddonCard(addon, installedIds.has(addon.id)));
+  }
+
+  if (!installedAddons.length) {
+    const empty = document.createElement("div");
+    empty.className = "installed-empty";
+    empty.textContent = "Пока ничего не установлено. Выбери пак слева или импортируй свой JSON.";
+    workshopInstalled.append(empty);
+  } else {
+    for (const addon of installedAddons) {
+      const card = document.createElement("article");
+      card.className = "installed-card";
+      const title = document.createElement("strong");
+      title.textContent = addon.name;
+      const description = document.createElement("p");
+      description.textContent = `${typeLabels[addon.type] || "DLC"} · ${addon.author} · v${addon.version}`;
+      card.append(title, description);
+      workshopInstalled.append(card);
+    }
+  }
+
+  if (starterButton) starterButton.disabled = !isLocalHost;
+}
+
+async function refreshWorkshop() {
+  if (!isLocalHost) {
+    showWorkshopMessage("Локальный Workshop работает через START-PLATWFC.bat.", true);
+    installedAddons = [];
+    renderWorkshop();
+    return;
+  }
+  try {
+    const response = await fetch("/api/workshop", { cache: "no-store" });
+    if (!response.ok) throw new Error("Workshop API is unavailable");
+    const data = await response.json();
+    installedAddons = Array.isArray(data.addons) ? data.addons : [];
+    for (const addon of installedAddons) applyAddon(addon);
+    renderWorkshop();
+    showWorkshopMessage(`ПАПКА ${data.folder || "dlc-workshop"} · УСТАНОВЛЕНО: ${installedAddons.length}`);
+  } catch (error) {
+    showWorkshopMessage("Не удалось подключиться к локальной мастерской. Перезапусти сервер.", true);
+  }
+}
+
+async function installAddon(addon) {
+  if (!isLocalHost) {
+    showWorkshopMessage("Установка DLC доступна в локальной версии игры.", true);
+    return;
+  }
+  try {
+    const response = await fetch("/api/workshop", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(addon)
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Не удалось установить DLC");
+    await refreshWorkshop();
+    showWorkshopMessage(`УСТАНОВЛЕНО: ${result.addon.name} · Сохранено в dlc-workshop`);
+  } catch (error) {
+    showWorkshopMessage(error.message || "Ошибка установки дополнения", true);
+  }
+}
+
+async function importAddonFile(file) {
+  if (!file) return;
+  if (file.size > 64 * 1024) {
+    showWorkshopMessage("JSON-файл слишком большой. Лимит — 64 КБ.", true);
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith(".json")) {
+    showWorkshopMessage("Выбери файл дополнения с расширением .json.", true);
+    return;
+  }
+  try {
+    const addon = JSON.parse(await file.text());
+    const response = await fetch("/api/workshop", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(addon)
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Сервер отклонил дополнение");
+    await refreshWorkshop();
+    showWorkshopMessage(`ИМПОРТИРОВАНО: ${result.addon.name} · Файл создан в dlc-workshop`);
+  } catch (error) {
+    showWorkshopMessage(error.message || "Не удалось прочитать JSON дополнение", true);
+  } finally {
+    if (workshopFileInput) workshopFileInput.value = "";
+  }
+}
+
+function openWorkshop() {
+  if (!workshopModal) return;
+  workshopModal.hidden = false;
+  workshopModal.setAttribute("aria-hidden", "false");
+  refreshWorkshop();
+}
+function closeWorkshop() {
+  if (!workshopModal) return;
+  workshopModal.hidden = true;
+  workshopModal.setAttribute("aria-hidden", "true");
+}
+
+workshopOpenButton?.addEventListener("click", openWorkshop);
+workshopCloseButton?.addEventListener("click", closeWorkshop);
+workshopBackdrop?.addEventListener("click", closeWorkshop);
+workshopRefreshButton?.addEventListener("click", refreshWorkshop);
+addEventListener("keydown", event => {
+  if (event.key === "Escape" && workshopModal && !workshopModal.hidden) closeWorkshop();
+});
+
+workshopImportButton?.addEventListener("click", () => {
+  if (!isLocalHost) {
+    showWorkshopMessage("Сначала запусти игру через START-PLATWFC.bat.", true);
+    return;
+  }
+  workshopFileInput?.click();
+});
+workshopFileInput?.addEventListener("change", () => importAddonFile(workshopFileInput.files?.[0]));
+
+starterButton?.addEventListener("click", async () => {
+  const installedIds = new Set(installedAddons.map(addon => addon.id));
+  for (const addon of workshopPacks) {
+    if (!installedIds.has(addon.id)) await installAddon(addon);
+  }
+  await refreshWorkshop();
+  showWorkshopMessage("СТАРТОВЫЙ НАБОР УСТАНОВЛЕН");
+});
+
+musicButton?.addEventListener("click", async () => {
+  try {
+    const playing = await audio.toggle();
+    musicButton.textContent = playing ? "♫ МУЗЫКА: ВКЛ" : "♫ МУЗЫКА: ВЫКЛ";
+    musicButton.setAttribute("aria-pressed", String(playing));
+  } catch (error) {
+    musicButton.textContent = "♫ НЕТ АУДИО";
+    dataStatus.textContent = error.message || "Audio unavailable";
+  }
+});
+
+checkDataButton?.addEventListener("click", async () => {
+  if (!isLocalHost) {
+    dataStatus.textContent = "Открой локальную игру через START-PLATWFC.bat.";
+    return;
+  }
+  checkDataButton.disabled = true;
+  dataStatus.textContent = "Проверяем файлы игры…";
+  const files = ["/", "/style.css", "/src/game.js", "/src/audio.js", "/src/multiplayer.js"];
+  try {
+    const results = await Promise.all(files.map(async file => {
+      const response = await fetch(file, { method: "HEAD", cache: "no-store" });
+      return response.ok;
+    }));
+    const workshopResponse = await fetch("/api/workshop", { cache: "no-store" });
+    const ok = results.every(Boolean) && workshopResponse.ok;
+    dataStatus.textContent = ok
+      ? "Все игровые файлы доступны. DLC-папка готова."
+      : "Некоторые данные не найдены. Запусти UPDATE-PLATWFC.bat.";
+  } catch {
+    dataStatus.textContent = "Сервер данных недоступен. Проверь окно PLATWFC.";
+  } finally {
+    checkDataButton.disabled = false;
+  }
+});
+
+refreshWorkshop();
+
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.04);
