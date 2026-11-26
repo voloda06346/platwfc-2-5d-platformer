@@ -1,6 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 import { MultiplayerClient } from "./multiplayer.js";
 import { PLATWFCAudio } from "./audio.js";
+import { CompanionBots } from "./bots.js";
 
 const canvas = document.querySelector("#game");
 const coords = document.querySelector("#coords");
@@ -47,6 +48,7 @@ scene.add(world);
 const platforms = [];
 const coins = [];
 const fallingWalls = [];
+const movableObjects = [];
 
 function addPlatform(x, z, width, depth, topY, color = 0x65c98d) {
   const side = new THREE.MeshStandardMaterial({ color, roughness: 0.94 });
@@ -87,6 +89,9 @@ addPlatform(-15, -49, 7, 7, 4.7, 0x70d49a);
 addFallingWall(0, -2.25, 0, 3.6, 2.55, 0x7894a8, "START GATE");
 addFallingWall(10.5, -19.35, 2.75, 3.2, 2.35, 0x8b91ad, "CLOUD GATE");
 addFallingWall(-5, -37.65, 3.25, 3.6, 2.6, 0x829d91, "GARDEN GATE");
+addMovableObject(-3.25, 1.05, 0.58, 0x52b7d5, "SKY CRATE");
+addMovableObject(3.35, 1.55, 0.58, 0xf0a64b, "SUN BOX");
+addMovableObject(0.15, 5.45, 0.58, 0x9c83df, "MINT BLOCK");
 
 [
   [0, -7, 2.7], [5.5, -12.5, 3.7], [10.5, -18, 4.2],
@@ -167,6 +172,44 @@ function addFallingWall(x, z, baseY, width = 3.6, height = 2.6, color = 0x7894a8
   });
   fallingWalls.push(wall);
   return wall;
+}
+
+function addMovableObject(x, z, y, color, label) {
+  const group = new THREE.Group();
+  const bodyMaterial = new THREE.MeshStandardMaterial({
+    color: color,
+    roughness: 0.68,
+    metalness: 0.08
+  });
+  const trimMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffe5a0,
+    emissive: 0x5b3a12,
+    emissiveIntensity: 0.16,
+    roughness: 0.48
+  });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.05, 1.05), bodyMaterial);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+
+  const marker = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.055, 8, 18), trimMaterial);
+  marker.position.set(0, 0.54, 0);
+  group.add(marker);
+
+  const object = {
+    group: group,
+    body: body,
+    label: label,
+    held: false,
+    parts: [body, marker]
+  };
+  for (let i = 0; i < object.parts.length; i++) {
+    object.parts[i].userData.movableObject = object;
+  }
+  group.position.set(x, y, z);
+  world.add(group);
+  movableObjects.push(object);
+  return object;
 }
 
 function addCloud(x, y, z, scale) {
@@ -473,35 +516,12 @@ const playerMesh = makeAvatar(0xf2a84b, false, localName);
 scene.add(playerMesh);
 const remoteMeshes = new Map();
 
-// Three autonomous companion bots. They patrol the main island route,
-// jump between platforms, and use the same articulated avatar animation as players.
-const botDefinitions = [
-  { name: "BOT NOVA", color: 0x35bd8a, accent: 0xffdc78, x: -2.2, z: 3.15, lane: -0.68, speed: 5.25 },
-  { name: "BOT PIXEL", color: 0x4b8fe8, accent: 0x9ce8ff, x: 0, z: 4.05, lane: 0, speed: 5.55 },
-  { name: "BOT COMET", color: 0xb47ce8, accent: 0xffa6c9, x: 2.2, z: 3.15, lane: 0.68, speed: 5.35 }
-];
-
-const bots = botDefinitions.map((definition, index) => {
-  const avatar = makeAvatar(definition.color, true, definition.name);
-  avatar.userData.appearance.accent.color.setHex(definition.accent);
-  scene.add(avatar);
-  const start = platforms[0];
-  return {
-    avatar,
-    name: definition.name,
-    position: new THREE.Vector3(definition.x, start.topY, definition.z),
-    velocity: new THREE.Vector3(),
-    verticalVelocity: 0,
-    grounded: true,
-    facing: 0,
-    platformIndex: 0,
-    routeDirection: 1,
-    lane: definition.lane,
-    speed: definition.speed,
-    phase: index * 0.7
-  };
-});
-
+const bots = new CompanionBots(
+  THREE,
+  scene,
+  platforms,
+  (color, name) => makeAvatar(color, true, name)
+);
 let botsEnabled = true;
 const botsToggleButton = document.querySelector("#bots-toggle");
 function updateBotsButton() {
@@ -511,7 +531,7 @@ function updateBotsButton() {
 }
 botsToggleButton?.addEventListener("click", () => {
   botsEnabled = !botsEnabled;
-  for (const bot of bots) bot.avatar.visible = botsEnabled;
+  bots.setEnabled(botsEnabled);
   updateBotsButton();
 });
 updateBotsButton();
@@ -539,6 +559,12 @@ let lastGamepadInteract = false;
 const cursorNdc = new THREE.Vector2(0, 0);
 const raycaster = new THREE.Raycaster();
 let aimedWall = null;
+let aimedObject = null;
+let heldObject = null;
+const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const dragPoint = new THREE.Vector3();
+const dragOffset = new THREE.Vector3();
+let lastGamepadGrab = false;
 const cursorToggleButton = document.querySelector("#cursor-toggle");
 function updateCursorToggleButton() {
   if (!cursorToggleButton) return;
@@ -662,11 +688,16 @@ function setCursorFromPointer(event) {
 canvas.addEventListener("pointerenter", event => setCursorFromPointer(event));
 canvas.addEventListener("pointerdown", event => {
   setCursorFromPointer(event);
+  refreshAimedTarget();
   dragging = true;
   pointerMoved = false;
   pointerDownX = event.clientX;
   pointerDownY = event.clientY;
   lastPointerX = event.clientX;
+  if (beginObjectDrag()) {
+    if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
+    return;
+  }
   if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
 });
 canvas.addEventListener("pointermove", event => {
@@ -677,20 +708,31 @@ canvas.addEventListener("pointermove", event => {
   if (Math.hypot(dx, dy) > 7) pointerMoved = true;
   const delta = event.clientX - lastPointerX;
   lastPointerX = event.clientX;
+  if (heldObject) {
+    moveHeldObjectToCursor();
+    pointerMoved = true;
+    return;
+  }
   if (pointerMoved) cameraYaw -= delta * 0.006;
 });
 canvas.addEventListener("pointerup", event => {
-  if (dragging && !pointerMoved && event.button === 0) {
-    refreshAimedWall();
+  if (heldObject) {
+    releaseObject();
+  } else if (dragging && !pointerMoved && event.button === 0) {
+    refreshAimedTarget();
     activateAimedWall();
   }
   dragging = false;
 });
-canvas.addEventListener("pointercancel", () => { dragging = false; });
+canvas.addEventListener("pointercancel", () => {
+  releaseObject();
+  dragging = false;
+});
 canvas.addEventListener("pointerleave", () => {
   if (helperCursorElement && !gamepadCursorActive) helperCursorElement.hidden = true;
   cursorVisible = gamepadCursorActive;
 });
+
 
 function resize() {
   const rect = canvas.getBoundingClientRect();
@@ -871,109 +913,6 @@ function updateRemotes(dt, elapsed) {
   }
 }
 
-function updateBots(dt, elapsed) {
-  if (!botsEnabled) return;
-
-  // The first nine platforms form the main route. Bots walk it in both directions.
-  const routeLength = Math.min(9, platforms.length);
-  if (routeLength < 2) return;
-
-  for (const bot of bots) {
-    if (bot.platformIndex >= routeLength) bot.platformIndex = 0;
-
-    let destinationIndex = bot.platformIndex + bot.routeDirection;
-    if (destinationIndex >= routeLength || destinationIndex < 0) {
-      bot.routeDirection *= -1;
-      destinationIndex = bot.platformIndex + bot.routeDirection;
-    }
-
-    const source = platforms[bot.platformIndex];
-    const destination = platforms[destinationIndex];
-    const targetX = destination.x + bot.lane;
-    const targetZ = destination.z;
-    const dx = targetX - bot.position.x;
-    const dz = targetZ - bot.position.z;
-    const distance = Math.hypot(dx, dz);
-    const directionX = distance > 0.001 ? dx / distance : 0;
-    const directionZ = distance > 0.001 ? dz / distance : 0;
-
-    const xEdge = Math.abs(directionX) > 0.001
-      ? (source.width * 0.5 - 0.55) / Math.abs(directionX)
-      : Infinity;
-    const zEdge = Math.abs(directionZ) > 0.001
-      ? (source.depth * 0.5 - 0.55) / Math.abs(directionZ)
-      : Infinity;
-    const launchDistance = Math.min(xEdge, zEdge) + 0.75;
-
-    const desiredVX = directionX * bot.speed;
-    const desiredVZ = directionZ * bot.speed;
-    const response = 1 - Math.exp(-7.5 * dt);
-    bot.velocity.x += (desiredVX - bot.velocity.x) * response;
-    bot.velocity.z += (desiredVZ - bot.velocity.z) * response;
-
-    if (distance > 0.08) {
-      const targetFacing = Math.atan2(-directionX, -directionZ);
-      const delta = Math.atan2(
-        Math.sin(targetFacing - bot.facing),
-        Math.cos(targetFacing - bot.facing)
-      );
-      bot.facing += delta * (1 - Math.exp(-10 * dt));
-    }
-
-    if (bot.grounded) {
-      bot.position.y = source.topY;
-      if (distance <= launchDistance) {
-        bot.grounded = false;
-        bot.verticalVelocity = 9.15;
-      }
-    }
-
-    const oldY = bot.position.y;
-    bot.position.x += bot.velocity.x * dt;
-    bot.position.z += bot.velocity.z * dt;
-
-    let nextY = oldY;
-    let landed = false;
-    if (!bot.grounded) {
-      bot.verticalVelocity -= 20.5 * dt;
-      nextY = oldY + bot.verticalVelocity * dt;
-
-      const insideDestination =
-        Math.abs(bot.position.x - destination.x) < destination.width * 0.5 - 0.32 &&
-        Math.abs(bot.position.z - destination.z) < destination.depth * 0.5 - 0.32;
-
-      if (bot.verticalVelocity <= 0 && insideDestination &&
-          oldY >= destination.topY - 0.12 && nextY <= destination.topY) {
-        nextY = destination.topY;
-        bot.verticalVelocity = 0;
-        bot.grounded = true;
-        bot.platformIndex = destinationIndex;
-        bot.velocity.multiplyScalar(0.38);
-        landed = true;
-      }
-    } else {
-      nextY = source.topY;
-    }
-
-    bot.position.y = nextY;
-    if (bot.position.y < -18) {
-      const start = platforms[0];
-      bot.position.set(bot.lane * 2.5, start.topY, 3.4);
-      bot.velocity.set(0, 0, 0);
-      bot.verticalVelocity = 0;
-      bot.grounded = true;
-      bot.platformIndex = 0;
-      bot.routeDirection = 1;
-    }
-
-    bot.avatar.position.copy(bot.position);
-    bot.avatar.rotation.y = bot.facing;
-    const speed = Math.hypot(bot.velocity.x, bot.velocity.z);
-    const action = bot.grounded ? (speed > 0.25 ? "run" : "idle") : "jump";
-    animateAvatar(bot.avatar, dt, elapsed + bot.phase, speed, bot.grounded, action);
-  }
-}
-
 let gamepadCursorActive = false;
 
 function pollGamepad(dt) {
@@ -1012,6 +951,16 @@ function pollGamepad(dt) {
   if (interactDown && !lastGamepadInteract) interactionQueued = true;
   lastGamepadInteract = interactDown;
 
+  const grabDown = pressed(3); // Standard Y / Triangle button.
+  if (grabDown && !lastGamepadGrab) {
+    if (heldObject) releaseObject();
+    else {
+      refreshAimedTarget();
+      beginObjectDrag();
+    }
+  }
+  lastGamepadGrab = grabDown;
+
   // Right stick moves the helper pointer. A connected pad starts it at screen centre.
   gamepadCursorActive = true;
   cursorVisible = true;
@@ -1020,26 +969,32 @@ function pollGamepad(dt) {
   if (helperCursorElement && cursorEnabled) helperCursorElement.hidden = false;
 }
 
-function refreshAimedWall() {
+function refreshAimedTarget() {
   aimedWall = null;
+  aimedObject = null;
   if (!cursorEnabled) return;
   scene.updateMatrixWorld(true);
   camera.updateMatrixWorld();
   raycaster.setFromCamera(cursorNdc, camera);
-  const targets = fallingWalls
+
+  const wallParts = fallingWalls
     .filter(wall => wall.state === "standing")
     .flatMap(wall => wall.parts);
-  const hits = raycaster.intersectObjects(targets, false);
-  for (const hit of hits) {
-    const wall = hit.object.userData.fallWall;
-    if (wall && wall.state === "standing") {
-      aimedWall = wall;
-      break;
+  const objectParts = movableObjects
+    .filter(object => !object.held)
+    .flatMap(object => object.parts);
+  const hits = raycaster.intersectObjects(wallParts.concat(objectParts), false);
+  if (hits.length) {
+    const hit = hits[0].object;
+    if (hit.userData.fallWall && hit.userData.fallWall.state === "standing") {
+      aimedWall = hit.userData.fallWall;
+    } else if (hit.userData.movableObject) {
+      aimedObject = hit.userData.movableObject;
     }
   }
 
   if (helperCursorElement) {
-    helperCursorElement.classList.toggle("is-target", Boolean(aimedWall));
+    helperCursorElement.classList.toggle("is-target", Boolean(aimedWall || aimedObject));
     helperCursorElement.hidden = !cursorEnabled || !cursorVisible;
     const frameRect = gameFrame.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
@@ -1048,12 +1003,56 @@ function refreshAimedWall() {
     helperCursorElement.style.left = x + "px";
     helperCursorElement.style.top = y + "px";
     const caption = helperCursorElement.querySelector(".helper-caption");
-    if (caption) caption.textContent = aimedWall ? "НАЖМИ F / X" : "КУРСОР-ПОМОЩНИК";
+    if (caption) {
+      caption.textContent = aimedWall
+        ? "НАЖМИ F / X"
+        : aimedObject ? "ЗАЖМИ И ПЕРЕТАЩИ" : "КУРСОР-ПОМОЩНИК";
+    }
   }
   if (interactionPromptElement) {
-    interactionPromptElement.hidden = !aimedWall || !cursorEnabled || !cursorVisible;
+    interactionPromptElement.hidden = (!aimedWall && !aimedObject && !heldObject) || !cursorEnabled || !cursorVisible;
     if (aimedWall) interactionPromptElement.textContent = "F / X / КЛИК — ВЫВАЛИТЬ СТЕНУ";
+    else if (aimedObject || heldObject) interactionPromptElement.textContent = "ЗАЖМИ МЫШЬ / Y — ПЕРЕТАЩИТЬ";
   }
+}
+
+function beginObjectDrag() {
+  if (!cursorEnabled || !aimedObject || heldObject) return false;
+  heldObject = aimedObject;
+  heldObject.held = true;
+  dragPlane.setFromNormalAndCoplanarPoint(
+    new THREE.Vector3(0, 1, 0),
+    heldObject.group.position
+  );
+  scene.updateMatrixWorld(true);
+  camera.updateMatrixWorld();
+  raycaster.setFromCamera(cursorNdc, camera);
+  if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) {
+    dragOffset.set(
+      heldObject.group.position.x - dragPoint.x,
+      0,
+      heldObject.group.position.z - dragPoint.z
+    );
+  } else {
+    dragOffset.set(0, 0, 0);
+  }
+  return true;
+}
+
+function moveHeldObjectToCursor() {
+  if (!heldObject || !cursorEnabled) return;
+  scene.updateMatrixWorld(true);
+  camera.updateMatrixWorld();
+  raycaster.setFromCamera(cursorNdc, camera);
+  if (!raycaster.ray.intersectPlane(dragPlane, dragPoint)) return;
+  heldObject.group.position.x = THREE.MathUtils.clamp(dragPoint.x + dragOffset.x, -26, 26);
+  heldObject.group.position.z = THREE.MathUtils.clamp(dragPoint.z + dragOffset.z, -74, 10);
+}
+
+function releaseObject() {
+  if (!heldObject) return;
+  heldObject.held = false;
+  heldObject = null;
 }
 
 function activateAimedWall() {
@@ -1231,9 +1230,7 @@ function applyAddon(addon) {
     for (const remote of remoteMeshes.values()) {
       setAvatarColors(remote.avatar, addon.bodyColor, addon.accentColor);
     }
-    for (const bot of bots) {
-      setAvatarColors(bot.avatar, addon.bodyColor, addon.accentColor);
-    }
+    bots.applyCosmetic(addon.bodyColor, addon.accentColor);
   }
 
   if (addon.type === "music") audio.setMood(addon.mood);
@@ -1456,10 +1453,11 @@ function animate() {
   pollGamepad(dt);
   updatePlayer(dt, elapsed);
   updateRemotes(dt, elapsed);
-  updateBots(dt, elapsed);
+  bots.update(dt, elapsed, animateAvatar);
   updateCamera(dt);
   updateFallingWalls(dt);
-  refreshAimedWall();
+  refreshAimedTarget();
+  if (heldObject && gamepadCursorActive) moveHeldObjectToCursor();
   if (interactionQueued) {
     interactionQueued = false;
     activateAimedWall();
