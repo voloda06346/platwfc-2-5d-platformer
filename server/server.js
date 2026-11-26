@@ -21,12 +21,7 @@ const PUBLIC_FILES = new Set([
   "/src/game.js",
   "/src/multiplayer.js",
   "/src/audio.js",
-  "/src/bots.js",
-  "/legacy.html",
-  "/legacy.css",
-  "/legacy.js",
-  "/legacy-bots.js",
-  "/versions.html"
+  "/src/bots.js"
 ]);
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
