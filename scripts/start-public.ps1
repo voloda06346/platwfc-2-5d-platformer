@@ -47,6 +47,11 @@ else {
     throw "Caddy was not found. Install the Windows caddy.exe, add it to PATH or put it at tools\caddy.exe. See https://caddyserver.com/docs/install."
 }
 
+$portInUse = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($portInUse) {
+    throw "Port 8080 is already in use. Stop the other PLATWFC process before starting public mode."
+}
+
 Push-Location $serverDir
 $serverProcess = $null
 try {
