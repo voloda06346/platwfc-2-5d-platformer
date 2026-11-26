@@ -33,6 +33,8 @@ button{cursor:pointer}
 .twin-button[aria-pressed="false"]{border-color:#ffffff35;color:#9eb2c8;background:#ffffff0d}
 .bots-button{border-color:#7eddbb88;color:#a8f4d3;background:linear-gradient(135deg,#237f7055,#174c6388)}
 .bots-button[aria-pressed="false"]{border-color:#ffffff35;color:#9eb2c8;background:#ffffff0d}
+.cursor-button{border-color:#79d9ed88;color:#aeeffc;background:linear-gradient(135deg,#23688a66,#194e7288)}
+.cursor-button[aria-pressed="false"]{border-color:#ffffff35;color:#9eb2c8;background:#ffffff0d}
 .workshop-button{border-color:#8ff0bd80;color:#aaffd0;background:#2ba77e25}
 .status{display:flex;align-items:center;gap:8px;margin-left:4px;color:#c4d8e9;font-size:10px;letter-spacing:.1em;white-space:nowrap}
 .status i{display:inline-block;width:8px;height:8px;background:#ffd56c;border-radius:50%;box-shadow:0 0 10px #ffd56c88}
@@ -58,6 +60,16 @@ button{cursor:pointer}
 .section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 4px 10px;color:#b8d4e8;font-size:9px;font-weight:1000;letter-spacing:.17em}
 .section-stars{color:var(--sun);letter-spacing:.35em}
 .game-frame{position:relative;overflow:hidden;border:4px solid #fff1c9;border-radius:19px;background:#173b5d;box-shadow:0 9px 0 #b47b4c,0 25px 65px #0006}
+.game-frame.cursor-helper-active canvas{cursor:none}
+.helper-cursor{position:absolute;z-index:8;display:flex;flex-direction:column;align-items:center;gap:5px;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 2px 5px #001827aa)}
+.helper-reticle{position:relative;width:25px;height:25px;border:2px solid #eafcff;border-radius:50%;background:#40c8df30;box-shadow:0 0 0 2px #174e6a88,0 0 16px #68e7ffbb}
+.helper-reticle:before,.helper-reticle:after{content:"";position:absolute;left:50%;top:50%;background:#eafcff;transform:translate(-50%,-50%)}
+.helper-reticle:before{width:37px;height:2px}
+.helper-reticle:after{width:2px;height:37px}
+.helper-caption{padding:3px 7px;border:1px solid #d7f9ff80;border-radius:999px;background:#092a42e8;color:#eaffff;font-size:8px;font-weight:1000;letter-spacing:.1em;white-space:nowrap}
+.helper-cursor.is-target .helper-reticle{border-color:#ffe27c;background:#ffd84b55;box-shadow:0 0 0 3px #9a661766,0 0 22px #ffe27c}
+.helper-cursor.is-target .helper-caption{border-color:#ffe27c;color:#fff0b2}
+.interaction-prompt{position:absolute;z-index:9;left:50%;top:54px;transform:translateX(-50%);padding:8px 13px;border:1px solid #ffe27caa;border-radius:999px;background:#153651eF;color:#fff1b9;font-size:9px;font-weight:1000;letter-spacing:.08em;white-space:nowrap;pointer-events:none;box-shadow:0 4px 16px #00182766}
 canvas{display:block;width:100%;height:min(61vw,650px);min-height:390px;touch-action:none;outline:none}
 .hud{position:absolute;top:14px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:none}
 .hud span{padding:7px 12px;border:1px solid #fff8;border-radius:999px;background:#0b2643c9;color:white;text-shadow:0 2px 3px #0008;font-size:10px;font-weight:1000;letter-spacing:.1em;box-shadow:0 3px 0 #05182a66}
@@ -74,6 +86,7 @@ canvas{display:block;width:100%;height:min(61vw,650px);min-height:390px;touch-ac
 .touch-controls .jump{width:68px;height:56px;background:#269b7deF}
 .touch-controls .boost{width:54px;height:48px;background:#346db1ed}
 .touch-controls .move-action{height:38px;background:#795b9bed;font-size:10px}
+.touch-controls [data-key="f"]{background:#c27d38ed;color:#fff4d7}
 footer{display:flex;justify-content:space-between;gap:12px;padding:22px 2px 0;color:#7895b0;font-size:9px;letter-spacing:.13em}
 
 /* Workshop overlay */
