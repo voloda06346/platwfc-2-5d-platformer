@@ -1,0 +1,15 @@
+{
+  email {$ACME_EMAIL}
+}
+
+{$PLATWFC_DOMAIN} {
+  encode zstd gzip
+
+  header {
+    -Server
+    X-Content-Type-Options nosniff
+    Referrer-Policy no-referrer
+  }
+
+  reverse_proxy 127.0.0.1:8080
+}
