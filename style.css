@@ -82,6 +82,10 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:22px 2px 0;co
 .close-button{width:42px;height:42px;border:1px solid #ffffff48;border-radius:50%;background:#ffffff13;color:white;font-size:25px;line-height:1}
 .workshop-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0 14px;padding:11px 13px;border:1px solid #ffffff24;border-radius:12px;background:#071c32a8}
 #workshop-status{color:#c6deee;font-size:9px;font-weight:900;letter-spacing:.09em}
+.toolbar-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.starter-button{border:0;border-radius:9px;padding:8px 11px;background:var(--mint);color:#143b43;font-size:9px;font-weight:1000;letter-spacing:.07em}
+.starter-button:disabled{opacity:.45;cursor:default}
+#workshop-refresh{white-space:nowrap}
 .workshop-columns{display:grid;grid-template-columns:1.4fr .8fr;gap:16px}
 .subheading{margin-bottom:10px;color:#ffe19a;font-size:10px;font-weight:1000;letter-spacing:.14em}
 .addon-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
