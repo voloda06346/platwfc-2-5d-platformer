@@ -4,7 +4,7 @@
     var root = document.createElement("div");
     root.className = "legacy-bot";
     root.style.left = startX + "px";
-    root.style.top = "300px";
+    root.style.top = "310px";
     root.style.backgroundColor = colour;
 
     var head = document.createElement("div");
@@ -60,7 +60,7 @@
         bot.phase += 0.11;
         jump = Math.sin(bot.phase) * 4;
         bot.element.style.left = Math.round(bot.x) + "px";
-        bot.element.style.top = Math.round(300 - Math.abs(jump)) + "px";
+        bot.element.style.top = Math.round(310 - Math.abs(jump)) + "px";
         bot.element.style.borderBottomWidth = (jump > 0 ? 4 : 2) + "px";
       }
     }
