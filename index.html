@@ -9,11 +9,15 @@
     var ua = navigator.userAgent || "";
     var canvas = document.createElement("canvas");
     var has2d = false;
-    try { has2d = !!(canvas.getContext && canvas.getContext("2d")); } catch (e) {}
+    var hasWebGL = false;
+    try {
+      has2d = !!(canvas.getContext && canvas.getContext("2d"));
+      hasWebGL = !!(canvas.getContext && (canvas.getContext("webgl") || canvas.getContext("experimental-webgl")));
+    } catch (e) {}
     var moduleProbe = document.createElement("script");
     var hasModules = ("noModule" in moduleProbe);
     var isWii = (/Nintendo Wii/i).test(ua);
-    if (isWii || !has2d || !hasModules) {
+    if (isWii || !has2d || !hasWebGL || !hasModules) {
       window.location.replace("./legacy.html");
     }
   }());
