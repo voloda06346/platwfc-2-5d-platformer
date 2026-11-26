@@ -152,3 +152,11 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:22px 2px 0;co
   .workshop-panel{padding:16px}
   .import-box{align-items:flex-start;flex-direction:column}
 }
+
+
+/* Visible direct links for the standard and legacy clients */
+.version-switch{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:4px 0 0;padding:10px 12px;border:1px solid #ffffff28;border-radius:13px;background:#071d34a8}
+.version-link,.version-all{display:inline-block;padding:9px 13px;border:1px solid #ffffff48;border-radius:9px;color:#e9f6ff;text-decoration:none;font-size:10px;font-weight:1000;letter-spacing:.08em}
+.version-link:hover,.version-all:hover{background:#ffffff18}
+.version-link.is-current{border-color:#8ff0bd;color:#baffd4;background:#8ff0bd18}
+.version-all{margin-left:auto;border-color:#ffd56c88;color:#ffe6a3}
