@@ -1,0 +1,27 @@
+const canvas=document.querySelector("#game");
+const ctx=canvas.getContext("2d");
+const coords=document.querySelector("#coords");
+const keys=new Set();
+const player={x:0,z:0,y:0,vy:0};
+const platforms=[{x:-4,z:0,w:8,d:5,h:0},{x:5,z:-2,w:3,d:3,h:1},{x:10,z:1,w:3,d:3,h:2},{x:15,z:-2,w:4,d:4,h:1}];
+let last=0;
+addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," "].includes(e.key))e.preventDefault();keys.add(e.key.toLowerCase());if(e.key===" "&&player.y<=0.001)player.vy=8.5;});
+addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
+function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0)}
+new ResizeObserver(resize).observe(canvas);resize();
+function project(x,z,h,cx,cy){return {x:cx+(x-z)*24,y:cy+(x+z)*12-h*28}}
+function polygon(points,fill,stroke="#ffffff20"){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.stroke()}
+function draw(t){const dt=Math.min((t-last)/1000||0,.04);last=t;
+ const ax=(keys.has("d")||keys.has("arrowright")?1:0)-(keys.has("a")||keys.has("arrowleft")?1:0);
+ const az=(keys.has("s")||keys.has("arrowdown")?1:0)-(keys.has("w")||keys.has("arrowup")?1:0);
+ player.x+=ax*dt*5;player.z+=az*dt*5;player.vy-=20*dt;player.y=Math.max(0,player.y+player.vy*dt);if(player.y===0)player.vy=0;
+ const w=canvas.clientWidth,h=canvas.clientHeight,cx=w*.5-player.x*24+player.z*24,cy=h*.62-(player.x+player.z)*12;
+ const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#182d4b");sky.addColorStop(1,"#263d55");ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+ for(let i=0;i<14;i++){let p=project(i-5,7,0,cx,cy);ctx.fillStyle="#ffffff0b";ctx.beginPath();ctx.arc(p.x,p.y,2,0,Math.PI*2);ctx.fill()}
+ platforms.slice().sort((a,b)=>(a.x+a.z)-(b.x+b.z)).forEach(q=>{const a=project(q.x,q.z,q.h,cx,cy),b=project(q.x+q.w,q.z,q.h,cx,cy),c=project(q.x+q.w,q.z+q.d,q.h,cx,cy),d=project(q.x,q.z+q.d,q.h,cx,cy);const down=28;
+ polygon([d,c,{x:c.x,y:c.y+down},{x:d.x,y:d.y+down}],"#246b67");polygon([b,c,{x:c.x,y:c.y+down},{x:b.x,y:b.y+down}],"#1d555b");polygon([a,b,c,d],q.h?"#72e6c1":"#4e8f91")}
+ );
+ const p=project(player.x,player.z,player.y,cx,cy);ctx.fillStyle="#0005";ctx.beginPath();ctx.ellipse(p.x,p.y+12,13,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle="#ffd166";ctx.fillRect(p.x-9,p.y-28,18,27);ctx.fillStyle="#ff8b5c";ctx.fillRect(p.x-11,p.y-40,22,13);ctx.fillStyle="#182238";ctx.fillRect(p.x+2,p.y-35,3,3);
+ coords.textContent="X "+player.x.toFixed(1)+" · Z "+player.z.toFixed(1);
+ requestAnimationFrame(draw)}
+requestAnimationFrame(draw);
