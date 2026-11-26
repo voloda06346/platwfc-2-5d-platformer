@@ -66,6 +66,14 @@ if not errorlevel 1 (
     exit /b 1
 )
 
+echo %ACME_EMAIL% | findstr /I "example.com" >nul
+if not errorlevel 1 (
+    echo ERROR: Replace the example email in .env with your own contact email.
+    start "" notepad.exe "%ENV_FILE%"
+    pause
+    exit /b 1
+)
+
 set "CADDY_EXE="
 if exist "%ROOT%tools\caddy.exe" set "CADDY_EXE=%ROOT%tools\caddy.exe"
 if not defined CADDY_EXE (
@@ -96,7 +104,7 @@ if not exist "%SERVER_DIR%\node_modules" (
 )
 
 echo Starting the PLATWFC Node.js server in a second window...
-start "PLATWFC Node Server - keep open" cmd.exe /k "cd /d ""%SERVER_DIR%"" && call npm start"
+start "PLATWFC Node Server - keep open" /D "%SERVER_DIR%" cmd.exe /k "npm start"
 
 echo Waiting for the Node.js server...
 timeout /t 3 /nobreak >nul
