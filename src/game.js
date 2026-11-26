@@ -583,6 +583,7 @@ function updateRemotes(dt, elapsed) {
     let remote = remoteMeshes.get(peer.id);
     if (!remote) {
       const avatar = makeAvatar(0x5b9de0, true, peer.name || "Player");
+      if (activeCosmetic) setAvatarColors(avatar, activeCosmetic.bodyColor, activeCosmetic.accentColor);
       scene.add(avatar);
       remote = { avatar, target: new THREE.Vector3() };
       remoteMeshes.set(peer.id, remote);
@@ -655,6 +656,7 @@ const checkDataButton = document.querySelector("#check-data");
 const dataStatus = document.querySelector("#data-status");
 const appliedAddonIds = new Set();
 let installedAddons = [];
+let activeCosmetic = null;
 
 const workshopPacks = [
   {
@@ -720,6 +722,7 @@ function applyAddon(addon) {
   }
 
   if (addon.type === "cosmetic") {
+    activeCosmetic = addon;
     setAvatarColors(playerMesh, addon.bodyColor, addon.accentColor);
     for (const remote of remoteMeshes.values()) {
       setAvatarColors(remote.avatar, addon.bodyColor, addon.accentColor);
