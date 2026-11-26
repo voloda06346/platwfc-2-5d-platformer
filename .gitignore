@@ -1,0 +1,5 @@
+.env
+logs/
+server/node_modules/
+node_modules/
+tools/caddy.exe
