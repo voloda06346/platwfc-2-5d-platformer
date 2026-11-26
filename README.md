@@ -46,7 +46,13 @@ Invoke-RestMethod http://localhost:8080/health
 
 Чтобы игроки могли подключаться из интернета, нужен домен, который указывает на публичный адрес хоста, и HTTPS/WSS. Для этого используется **Caddy как обычный Windows .exe**, а не контейнер.
 
-1. Установи Caddy для Windows по официальной инструкции: https://caddyserver.com/docs/install. Добавь `caddy.exe` в PATH либо положи его в `tools\caddy.exe` внутри проекта.
+1. Установи Caddy для Windows по официальной инструкции: https://caddyserver.com/docs/install. Добавь `caddy.exe` в PATH либо создай папку и положи бинарный файл туда:
+
+```powershell
+New-Item -ItemType Directory -Force .\tools
+```
+
+Путь к файлу в итоге должен быть `tools\caddy.exe`.
 2. Создай файл `.env` из шаблона:
 
 ```powershell
