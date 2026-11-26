@@ -4,6 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <meta name="theme-color" content="#1b4f85">
+  <script type="text/javascript">
+  (function () {
+    var ua = navigator.userAgent || "";
+    var canvas = document.createElement("canvas");
+    var has2d = false;
+    try { has2d = !!(canvas.getContext && canvas.getContext("2d")); } catch (e) {}
+    var moduleProbe = document.createElement("script");
+    var hasModules = ("noModule" in moduleProbe);
+    var isWii = (/Nintendo Wii/i).test(ua);
+    if (isWii || !has2d || !hasModules) {
+      window.location.replace("./legacy.html");
+    }
+  }());
+  </script>
   <title>PLATWFC — 3D Platformer</title>
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -51,6 +65,7 @@
           <span class="helper-caption">КУРСОР-ПОМОЩНИК</span>
         </div>
         <div id="interaction-prompt" class="interaction-prompt" hidden>F / X / КЛИК — ВЫВАЛИТЬ СТЕНУ</div>
+        <div id="object-prompt" class="interaction-prompt object-prompt" hidden>ЗАЖМИ МЫШЬ / Y — ПЕРЕТАЩИТЬ ОБЪЕКТ</div>
         <div class="hud">
           <span class="hud-world">WORLD 01</span>
           <span id="coords">X 0 · Z 0</span>
