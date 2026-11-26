@@ -8,6 +8,9 @@ const net = document.querySelector("#network-status");
 const scoreLabel = document.querySelector("#score");
 const nameInput = document.querySelector("#player-name");
 const applyNameButton = document.querySelector("#apply-name");
+const gameFrame = document.querySelector(".game-frame");
+const helperCursorElement = document.querySelector("#helper-cursor");
+const interactionPromptElement = document.querySelector("#interaction-prompt");
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -43,6 +46,7 @@ const world = new THREE.Group();
 scene.add(world);
 const platforms = [];
 const coins = [];
+const fallingWalls = [];
 
 function addPlatform(x, z, width, depth, topY, color = 0x65c98d) {
   const side = new THREE.MeshStandardMaterial({ color, roughness: 0.94 });
@@ -79,10 +83,87 @@ addPlatform(-5, -35.5, 6.2, 6.2, 3.25, 0x70d49a);
 addPlatform(-11, -42, 5.2, 5.2, 4.0, 0x62bd83);
 addPlatform(-15, -49, 7, 7, 4.7, 0x70d49a);
 
+// Interactive stone panels inspired by touch/cursor gimmicks in 3D platformers.
+addFallingWall(0, -2.25, 0, 3.6, 2.55, 0x7894a8, "START GATE");
+addFallingWall(10.5, -19.35, 2.75, 3.2, 2.35, 0x8b91ad, "CLOUD GATE");
+addFallingWall(-5, -37.65, 3.25, 3.6, 2.6, 0x829d91, "GARDEN GATE");
+
 [
   [0, -7, 2.7], [5.5, -12.5, 3.7], [10.5, -18, 4.2],
   [7, -24, 3.1], [1, -29.5, 4], [-5, -35.5, 4.4], [-11, -42, 5.1]
 ].forEach(([x, z, y]) => addCoin(x, z, y));
+
+function addFallingWall(x, z, baseY, width = 3.6, height = 2.6, color = 0x7894a8, label = "STONE GATE") {
+  const group = new THREE.Group();
+  const stone = new THREE.MeshStandardMaterial({ color, roughness: 0.88 });
+  const edge = new THREE.MeshStandardMaterial({ color: 0x31536e, roughness: 0.76 });
+  const glow = new THREE.MeshStandardMaterial({
+    color: 0xffd36e,
+    emissive: 0x7a4310,
+    emissiveIntensity: 0.26,
+    roughness: 0.55
+  });
+
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.48), stone);
+  panel.position.y = height * 0.5;
+  panel.castShadow = true;
+  panel.receiveShadow = true;
+  group.add(panel);
+
+  for (const side of [-1, 1]) {
+    const post = new THREE.Mesh(
+      new THREE.BoxGeometry(0.22, height + 0.18, 0.62),
+      edge
+    );
+    post.position.set(side * (width * 0.5 - 0.05), height * 0.5, 0);
+    post.castShadow = true;
+    group.add(post);
+  }
+
+  const topBar = new THREE.Mesh(
+    new THREE.BoxGeometry(width + 0.32, 0.2, 0.68),
+    edge
+  );
+  topBar.position.y = height + 0.05;
+  topBar.castShadow = true;
+  group.add(topBar);
+
+  // Bright centre badge marks this as a pushable, interactive wall.
+  const badge = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.56, 0.07), glow);
+  badge.position.set(0, height * 0.56, -0.28);
+  group.add(badge);
+  const badgeDot = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 10), glow);
+  badgeDot.position.set(0, height * 0.56, -0.36);
+  group.add(badgeDot);
+
+  group.position.set(x, baseY, z);
+  group.traverse(object => {
+    if (object.isMesh) {
+      object.userData.fallWall = null;
+      object.castShadow = true;
+    }
+  });
+  world.add(group);
+
+  const wall = {
+    group,
+    label,
+    parts: [],
+    state: "standing",
+    fallTime: 0,
+    startX: 0,
+    startZ: z,
+    baseZ: z
+  };
+  group.traverse(object => {
+    if (object.isMesh) {
+      object.userData.fallWall = wall;
+      wall.parts.push(object);
+    }
+  });
+  fallingWalls.push(wall);
+  return wall;
+}
 
 function addCloud(x, y, z, scale) {
   const cloud = new THREE.Group();
@@ -445,6 +526,35 @@ let score = 0;
 let jumpQueued = false;
 let actionQueued = null;
 const keys = new Set();
+const gamepadKeys = new Set();
+let interactionQueued = false;
+let cursorEnabled = true;
+let cursorVisible = false;
+let lastGamepadJump = false;
+let lastGamepadInteract = false;
+const cursorNdc = new THREE.Vector2(0, 0);
+const raycaster = new THREE.Raycaster();
+let aimedWall = null;
+const cursorToggleButton = document.querySelector("#cursor-toggle");
+function updateCursorToggleButton() {
+  if (!cursorToggleButton) return;
+  cursorToggleButton.textContent = cursorEnabled ? "◎ CURSOR: ВКЛ" : "◎ CURSOR: ВЫКЛ";
+  cursorToggleButton.setAttribute("aria-pressed", String(cursorEnabled));
+  gameFrame?.classList.toggle("cursor-helper-active", cursorEnabled);
+  if (!cursorEnabled) {
+    if (helperCursorElement) helperCursorElement.hidden = true;
+    if (interactionPromptElement) interactionPromptElement.hidden = true;
+    aimedWall = null;
+  } else if (helperCursorElement && cursorVisible) {
+    helperCursorElement.hidden = false;
+  }
+}
+cursorToggleButton?.addEventListener("click", () => {
+  cursorEnabled = !cursorEnabled;
+  updateCursorToggleButton();
+});
+updateCursorToggleButton();
+
 const multiplayer = new MultiplayerClient();
 const audio = new PLATWFCAudio();
 let twinSlopEnabled = true;
@@ -508,8 +618,9 @@ function queueJump() {
 }
 addEventListener("keydown", event => {
   const key = normalizeKey(event.key);
-  if (["w", "a", "s", "d", "space", "boost", "crouch", "q", "e", "r"].includes(key)) event.preventDefault();
+  if (["w", "a", "s", "d", "space", "boost", "crouch", "q", "e", "r", "f"].includes(key)) event.preventDefault();
   if (key === "space" && !keys.has("space")) queueJump();
+  if (key === "f" && !keys.has("f")) interactionQueued = true;
   if ((key === "q" || key === "e" || key === "r") && !keys.has(key)) actionQueued = key;
   keys.add(key);
 });
@@ -521,6 +632,7 @@ document.querySelectorAll("[data-key]").forEach(button => {
   const down = event => {
     event.preventDefault();
     if (key === "space" && !keys.has("space")) queueJump();
+    if (key === "f" && !keys.has("f")) interactionQueued = true;
     if ((key === "q" || key === "e" || key === "r") && !keys.has(key)) actionQueued = key;
     keys.add(key);
   };
@@ -532,20 +644,49 @@ document.querySelectorAll("[data-key]").forEach(button => {
 });
 
 let dragging = false;
+let pointerMoved = false;
+let pointerDownX = 0;
+let pointerDownY = 0;
 let lastPointerX = 0;
+function setCursorFromPointer(event) {
+  const rect = canvas.getBoundingClientRect();
+  cursorNdc.x = THREE.MathUtils.clamp(((event.clientX - rect.left) / rect.width) * 2 - 1, -1, 1);
+  cursorNdc.y = THREE.MathUtils.clamp(1 - ((event.clientY - rect.top) / rect.height) * 2, -1, 1);
+  cursorVisible = true;
+  if (helperCursorElement && cursorEnabled) helperCursorElement.hidden = false;
+}
+canvas.addEventListener("pointerenter", event => setCursorFromPointer(event));
 canvas.addEventListener("pointerdown", event => {
+  setCursorFromPointer(event);
   dragging = true;
+  pointerMoved = false;
+  pointerDownX = event.clientX;
+  pointerDownY = event.clientY;
   lastPointerX = event.clientX;
-  canvas.setPointerCapture(event.pointerId);
+  if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
 });
 canvas.addEventListener("pointermove", event => {
+  setCursorFromPointer(event);
   if (!dragging) return;
+  const dx = event.clientX - pointerDownX;
+  const dy = event.clientY - pointerDownY;
+  if (Math.hypot(dx, dy) > 7) pointerMoved = true;
   const delta = event.clientX - lastPointerX;
   lastPointerX = event.clientX;
-  cameraYaw -= delta * 0.006;
+  if (pointerMoved) cameraYaw -= delta * 0.006;
 });
-canvas.addEventListener("pointerup", () => { dragging = false; });
+canvas.addEventListener("pointerup", event => {
+  if (dragging && !pointerMoved && event.pointerType !== "mouse" || dragging && !pointerMoved && event.button === 0) {
+    refreshAimedWall();
+    activateAimedWall();
+  }
+  dragging = false;
+});
 canvas.addEventListener("pointercancel", () => { dragging = false; });
+canvas.addEventListener("pointerleave", () => {
+  if (helperCursorElement && !gamepadCursorActive) helperCursorElement.hidden = true;
+  cursorVisible = gamepadCursorActive;
+});
 
 function resize() {
   const rect = canvas.getBoundingClientRect();
@@ -572,10 +713,10 @@ function beginAction(action, duration = 0) {
 }
 
 function updatePlayer(dt, elapsed) {
-  const inputX = (keys.has("d") ? 1 : 0) - (keys.has("a") ? 1 : 0);
-  const inputZ = (keys.has("w") ? 1 : 0) - (keys.has("s") ? 1 : 0);
+  const inputX = ((keys.has("d") || gamepadKeys.has("d")) ? 1 : 0) - ((keys.has("a") || gamepadKeys.has("a")) ? 1 : 0);
+  const inputZ = ((keys.has("w") || gamepadKeys.has("w")) ? 1 : 0) - ((keys.has("s") || gamepadKeys.has("s")) ? 1 : 0);
   const inputLength = Math.hypot(inputX, inputZ);
-  const sprinting = keys.has("boost");
+  const sprinting = keys.has("boost") || gamepadKeys.has("boost");
   const maxSpeed = sprinting ? 9.4 : 6.3;
 
   forwardDirection.set(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw));
@@ -823,6 +964,114 @@ function updateBots(dt, elapsed) {
     const speed = Math.hypot(bot.velocity.x, bot.velocity.z);
     const action = bot.grounded ? (speed > 0.25 ? "run" : "idle") : "jump";
     animateAvatar(bot.avatar, dt, elapsed + bot.phase, speed, bot.grounded, action);
+  }
+}
+
+let gamepadCursorActive = false;
+
+function pollGamepad(dt) {
+  gamepadKeys.clear();
+  const pads = typeof navigator.getGamepads === "function" ? navigator.getGamepads() : [];
+  const pad = Array.from(pads || []).find(candidate => candidate && candidate.connected);
+
+  if (!pad) {
+    gamepadCursorActive = false;
+    lastGamepadJump = false;
+    lastGamepadInteract = false;
+    return;
+  }
+
+  const axis = (index) => {
+    const value = Number(pad.axes?.[index] || 0);
+    return Math.abs(value) < 0.18 ? 0 : value;
+  };
+  const leftX = axis(0);
+  const leftY = axis(1);
+  const rightX = axis(2);
+  const rightY = axis(3);
+  const pressed = index => Boolean(pad.buttons?.[index]?.pressed);
+
+  if (leftY < -0.22 || pressed(12)) gamepadKeys.add("w");
+  if (leftY > 0.22 || pressed(13)) gamepadKeys.add("s");
+  if (leftX < -0.22 || pressed(14)) gamepadKeys.add("a");
+  if (leftX > 0.22 || pressed(15)) gamepadKeys.add("d");
+  if (pressed(7) || pressed(5)) gamepadKeys.add("boost");
+
+  const jumpDown = pressed(0);
+  if (jumpDown && !lastGamepadJump) queueJump();
+  lastGamepadJump = jumpDown;
+
+  const interactDown = pressed(2); // Standard X / Square button.
+  if (interactDown && !lastGamepadInteract) interactionQueued = true;
+  lastGamepadInteract = interactDown;
+
+  // Right stick moves the helper pointer. A connected pad starts it at screen centre.
+  gamepadCursorActive = true;
+  cursorVisible = true;
+  cursorNdc.x = THREE.MathUtils.clamp(cursorNdc.x + rightX * dt * 1.65, -0.98, 0.98);
+  cursorNdc.y = THREE.MathUtils.clamp(cursorNdc.y - rightY * dt * 1.65, -0.98, 0.98);
+  if (helperCursorElement && cursorEnabled) helperCursorElement.hidden = false;
+}
+
+function refreshAimedWall() {
+  aimedWall = null;
+  if (!cursorEnabled) return;
+  camera.updateMatrixWorld();
+  raycaster.setFromCamera(cursorNdc, camera);
+  const targets = fallingWalls
+    .filter(wall => wall.state === "standing")
+    .flatMap(wall => wall.parts);
+  const hits = raycaster.intersectObjects(targets, false);
+  for (const hit of hits) {
+    const wall = hit.object.userData.fallWall;
+    if (wall && wall.state === "standing") {
+      aimedWall = wall;
+      break;
+    }
+  }
+
+  if (helperCursorElement) {
+    helperCursorElement.classList.toggle("is-target", Boolean(aimedWall));
+    helperCursorElement.hidden = !cursorEnabled || !cursorVisible;
+    const frameRect = gameFrame.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    const x = canvasRect.left - frameRect.left + (cursorNdc.x * 0.5 + 0.5) * canvasRect.width;
+    const y = canvasRect.top - frameRect.top + (0.5 - cursorNdc.y * 0.5) * canvasRect.height;
+    helperCursorElement.style.left = x + "px";
+    helperCursorElement.style.top = y + "px";
+    const caption = helperCursorElement.querySelector(".helper-caption");
+    if (caption) caption.textContent = aimedWall ? "НАЖМИ F / X" : "КУРСОР-ПОМОЩНИК";
+  }
+  if (interactionPromptElement) {
+    interactionPromptElement.hidden = !aimedWall || !cursorEnabled;
+    if (aimedWall) interactionPromptElement.textContent = "F / X / КЛИК — ВЫВАЛИТЬ СТЕНУ";
+  }
+}
+
+function activateAimedWall() {
+  if (!cursorEnabled || !aimedWall || aimedWall.state !== "standing") return false;
+  aimedWall.state = "falling";
+  aimedWall.fallTime = 0;
+  aimedWall.startX = aimedWall.group.rotation.x;
+  aimedWall.startZ = aimedWall.group.position.z;
+  return true;
+}
+
+function updateFallingWalls(dt) {
+  for (const wall of fallingWalls) {
+    if (wall.state !== "falling") continue;
+    wall.fallTime += dt;
+    const t = THREE.MathUtils.clamp(wall.fallTime / 0.72, 0, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    wall.group.rotation.x = wall.startX - ease * Math.PI * 0.5;
+    wall.group.rotation.z = Math.sin(t * Math.PI) * 0.035;
+    wall.group.position.z = wall.baseZ - Math.sin(t * Math.PI) * 0.12;
+    if (t >= 1) {
+      wall.state = "fallen";
+      wall.group.rotation.x = wall.startX - Math.PI * 0.5;
+      wall.group.rotation.z = 0;
+      wall.group.position.z = wall.baseZ;
+    }
   }
 }
 
@@ -1166,10 +1415,17 @@ function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.04);
   const elapsed = clock.elapsedTime;
+  pollGamepad(dt);
   updatePlayer(dt, elapsed);
   updateRemotes(dt, elapsed);
   updateBots(dt, elapsed);
   updateCamera(dt);
+  updateFallingWalls(dt);
+  refreshAimedWall();
+  if (interactionQueued) {
+    interactionQueued = false;
+    activateAimedWall();
+  }
   updateCoins(elapsed, dt);
   coords.textContent =
     "X " + player.position.x.toFixed(1) +
