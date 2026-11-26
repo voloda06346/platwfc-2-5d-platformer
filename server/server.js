@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer } from "ws";
@@ -10,22 +10,151 @@ import { broadcast, parseMessage, send } from "./network.js";
 const PORT = Number(process.env.PORT || 8080);
 const HOST = process.env.HOST || "0.0.0.0";
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const DLC_DIR = resolve(PROJECT_ROOT, "dlc-workshop");
+const MAX_ADDON_BYTES = 64 * 1024;
 const rooms = new RoomManager();
 const clients = new Map();
 
-// Only the game client files are served. Server code, .env, Git data and
-// node_modules are never exposed through the static file endpoint.
 const PUBLIC_FILES = new Set([
   "/index.html",
   "/style.css",
   "/src/game.js",
-  "/src/multiplayer.js"
+  "/src/multiplayer.js",
+  "/src/audio.js"
 ]);
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8"
 };
+
+function sendJson(res, status, value) {
+  const body = JSON.stringify(value);
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "content-length": Buffer.byteLength(body),
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff"
+  });
+  res.end(body);
+}
+
+async function readJsonBody(req, maxBytes = MAX_ADDON_BYTES) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > maxBytes) {
+      const error = new Error("Upload is too large");
+      error.statusCode = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    const error = new Error("Request body must be valid JSON");
+    error.statusCode = 400;
+    throw error;
+  }
+}
+
+function safeText(value, fallback, maxLength) {
+  return String(value ?? fallback)
+    .replace(/[<>\u0000-\u001f]/g, "")
+    .trim()
+    .slice(0, maxLength) || fallback;
+}
+
+function validateAddon(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("Add-on must be a JSON object");
+  }
+
+  const id = String(input.id || "").toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(id)) {
+    throw new Error("id must use 2–40 lowercase letters, digits or hyphens");
+  }
+
+  const type = String(input.type || "");
+  if (!["level", "cosmetic", "music"].includes(type)) {
+    throw new Error("type must be level, cosmetic or music");
+  }
+
+  const addon = {
+    schema: 1,
+    id,
+    name: safeText(input.name, "Untitled add-on", 48),
+    author: safeText(input.author, "Community", 32),
+    version: safeText(input.version, "1.0.0", 16),
+    description: safeText(input.description, "Community add-on for PLATWFC.", 180),
+    type
+  };
+
+  if (type === "level") {
+    if (!Array.isArray(input.platforms) || input.platforms.length < 1 || input.platforms.length > 24) {
+      throw new Error("level add-ons need 1–24 platforms");
+    }
+    addon.platforms = input.platforms.map((platform, index) => {
+      if (!platform || typeof platform !== "object") throw new Error(`platform ${index + 1} is invalid`);
+      const number = (key, min, max) => {
+        const value = Number(platform[key]);
+        if (!Number.isFinite(value) || value < min || value > max) {
+          throw new Error(`platform ${index + 1}: ${key} is out of range`);
+        }
+        return value;
+      };
+      const color = String(platform.color || "#70d49a");
+      if (!/^#[0-9a-fA-F]{6}$/.test(color)) throw new Error(`platform ${index + 1}: color must be #RRGGBB`);
+      return {
+        x: number("x", -200, 200),
+        z: number("z", -200, 200),
+        width: number("width", 1, 24),
+        depth: number("depth", 1, 24),
+        height: number("height", -5, 60),
+        color
+      };
+    });
+  }
+
+  if (type === "cosmetic") {
+    const bodyColor = String(input.bodyColor || "#3b9d9a");
+    const accentColor = String(input.accentColor || "#ffd36e");
+    if (!/^#[0-9a-fA-F]{6}$/.test(bodyColor) || !/^#[0-9a-fA-F]{6}$/.test(accentColor)) {
+      throw new Error("cosmetic colors must use #RRGGBB format");
+    }
+    addon.bodyColor = bodyColor;
+    addon.accentColor = accentColor;
+  }
+
+  if (type === "music") {
+    const mood = String(input.mood || "adventure");
+    if (!["adventure", "sunset", "arcade"].includes(mood)) {
+      throw new Error("music mood must be adventure, sunset or arcade");
+    }
+    addon.mood = mood;
+  }
+
+  return addon;
+}
+
+async function listAddons() {
+  await mkdir(DLC_DIR, { recursive: true });
+  const entries = await readdir(DLC_DIR, { withFileTypes: true });
+  const addons = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.toLowerCase().endsWith(".json")) continue;
+    try {
+      const data = JSON.parse(await readFile(resolve(DLC_DIR, entry.name), "utf8"));
+      const addon = validateAddon(data);
+      addons.push(addon);
+    } catch {
+      // Ignore files that do not match the supported, safe add-on schema.
+    }
+  }
+  return addons.sort((a, b) => a.name.localeCompare(b.name));
+}
 
 const http = createServer(async (req, res) => {
   let url;
@@ -38,24 +167,56 @@ const http = createServer(async (req, res) => {
   }
 
   if (url.pathname === "/health") {
-    res.writeHead(200, {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store"
-    });
-    res.end(JSON.stringify({
+    sendJson(res, 200, {
       service: "PLATWFC",
       status: "ok",
       online: clients.size,
       rooms: rooms.rooms.size
-    }));
+    });
+    return;
+  }
+
+  if (url.pathname === "/api/workshop") {
+    if (req.method === "GET") {
+      try {
+        const addons = await listAddons();
+        sendJson(res, 200, { folder: "dlc-workshop", addons });
+      } catch {
+        sendJson(res, 500, { error: "Could not read the local workshop folder" });
+      }
+      return;
+    }
+
+    if (req.method === "POST") {
+      try {
+        const input = await readJsonBody(req);
+        const addon = validateAddon(input);
+        await mkdir(DLC_DIR, { recursive: true });
+        const target = resolve(DLC_DIR, `${addon.id}.json`);
+        try {
+          await stat(target);
+          sendJson(res, 409, { error: "An add-on with this id is already installed" });
+          return;
+        } catch {}
+        await writeFile(target, JSON.stringify(addon, null, 2), { encoding: "utf8", flag: "wx" });
+        sendJson(res, 201, {
+          installed: true,
+          folder: "dlc-workshop",
+          addon
+        });
+      } catch (error) {
+        sendJson(res, error.statusCode || 400, { error: error.message || "Add-on import failed" });
+      }
+      return;
+    }
+
+    res.writeHead(405, { "content-type": "application/json; charset=utf-8", "allow": "GET, POST" });
+    res.end(JSON.stringify({ error: "Method not allowed" }));
     return;
   }
 
   if (req.method !== "GET" && req.method !== "HEAD") {
-    res.writeHead(405, {
-      "content-type": "text/plain; charset=utf-8",
-      "allow": "GET, HEAD"
-    });
+    res.writeHead(405, { "content-type": "text/plain; charset=utf-8", "allow": "GET, HEAD" });
     res.end("Method not allowed\n");
     return;
   }
@@ -103,7 +264,7 @@ const http = createServer(async (req, res) => {
 const wss = new WebSocketServer({ server: http, path: "/ws", maxPayload: 2048 });
 
 function cleanName(value) {
-  return String(value || "Player").replace(/[<>\u0000-\u001f]/g, "").trim().slice(0, 16) || "Player";
+  return safeText(value, "Player", 16);
 }
 function validPosition(value) {
   return Number.isFinite(value) ? Math.max(-10000, Math.min(10000, value)) : 0;
@@ -197,11 +358,15 @@ wss.on("connection", socket => {
   });
 });
 
+await mkdir(DLC_DIR, { recursive: true });
+
 http.listen(PORT, HOST, () => {
   console.log(`PLATWFC listening on ${HOST}:${PORT}`);
   console.log(`Game: http://localhost:${PORT}/`);
   console.log(`Health: http://localhost:${PORT}/health`);
+  console.log(`Workshop: http://localhost:${PORT}/api/workshop`);
   console.log(`WebSocket: ws://localhost:${PORT}/ws`);
+  console.log("DLC folder: " + DLC_DIR);
 });
 
 process.on("SIGTERM", () => {
