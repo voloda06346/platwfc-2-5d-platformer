@@ -388,6 +388,49 @@ const playerMesh = makeAvatar(0xf2a84b, false, localName);
 scene.add(playerMesh);
 const remoteMeshes = new Map();
 
+// Three autonomous companion bots. They patrol the main island route,
+// jump between platforms, and use the same articulated avatar animation as players.
+const botDefinitions = [
+  { name: "BOT NOVA", color: 0x35bd8a, accent: 0xffdc78, x: -2.2, z: 3.15, lane: -0.68, speed: 5.25 },
+  { name: "BOT PIXEL", color: 0x4b8fe8, accent: 0x9ce8ff, x: 0, z: 4.05, lane: 0, speed: 5.55 },
+  { name: "BOT COMET", color: 0xb47ce8, accent: 0xffa6c9, x: 2.2, z: 3.15, lane: 0.68, speed: 5.35 }
+];
+
+const bots = botDefinitions.map((definition, index) => {
+  const avatar = makeAvatar(definition.color, true, definition.name);
+  avatar.userData.appearance.accent.color.setHex(definition.accent);
+  scene.add(avatar);
+  const start = platforms[0];
+  return {
+    avatar,
+    name: definition.name,
+    position: new THREE.Vector3(definition.x, start.topY, definition.z),
+    velocity: new THREE.Vector3(),
+    verticalVelocity: 0,
+    grounded: true,
+    facing: 0,
+    platformIndex: 0,
+    routeDirection: 1,
+    lane: definition.lane,
+    speed: definition.speed,
+    phase: index * 0.7
+  };
+});
+
+let botsEnabled = true;
+const botsToggleButton = document.querySelector("#bots-toggle");
+function updateBotsButton() {
+  if (!botsToggleButton) return;
+  botsToggleButton.textContent = botsEnabled ? "🤖 БОТЫ: ВКЛ" : "🤖 БОТЫ: ВЫКЛ";
+  botsToggleButton.setAttribute("aria-pressed", String(botsEnabled));
+}
+botsToggleButton?.addEventListener("click", () => {
+  botsEnabled = !botsEnabled;
+  for (const bot of bots) bot.avatar.visible = botsEnabled;
+  updateBotsButton();
+});
+updateBotsButton();
+
 const player = {
   position: new THREE.Vector3(0, 0, 2),
   velocity: new THREE.Vector3(),
@@ -680,6 +723,109 @@ function updateRemotes(dt, elapsed) {
   }
 }
 
+function updateBots(dt, elapsed) {
+  if (!botsEnabled) return;
+
+  // The first nine platforms form the main route. Bots walk it in both directions.
+  const routeLength = Math.min(9, platforms.length);
+  if (routeLength < 2) return;
+
+  for (const bot of bots) {
+    if (bot.platformIndex >= routeLength) bot.platformIndex = 0;
+
+    let destinationIndex = bot.platformIndex + bot.routeDirection;
+    if (destinationIndex >= routeLength || destinationIndex < 0) {
+      bot.routeDirection *= -1;
+      destinationIndex = bot.platformIndex + bot.routeDirection;
+    }
+
+    const source = platforms[bot.platformIndex];
+    const destination = platforms[destinationIndex];
+    const targetX = destination.x + bot.lane;
+    const targetZ = destination.z;
+    const dx = targetX - bot.position.x;
+    const dz = targetZ - bot.position.z;
+    const distance = Math.hypot(dx, dz);
+    const directionX = distance > 0.001 ? dx / distance : 0;
+    const directionZ = distance > 0.001 ? dz / distance : 0;
+
+    const xEdge = Math.abs(directionX) > 0.001
+      ? (source.width * 0.5 - 0.55) / Math.abs(directionX)
+      : Infinity;
+    const zEdge = Math.abs(directionZ) > 0.001
+      ? (source.depth * 0.5 - 0.55) / Math.abs(directionZ)
+      : Infinity;
+    const launchDistance = Math.min(xEdge, zEdge) + 0.75;
+
+    const desiredVX = directionX * bot.speed;
+    const desiredVZ = directionZ * bot.speed;
+    const response = 1 - Math.exp(-7.5 * dt);
+    bot.velocity.x += (desiredVX - bot.velocity.x) * response;
+    bot.velocity.z += (desiredVZ - bot.velocity.z) * response;
+
+    if (distance > 0.08) {
+      const targetFacing = Math.atan2(-directionX, -directionZ);
+      const delta = Math.atan2(
+        Math.sin(targetFacing - bot.facing),
+        Math.cos(targetFacing - bot.facing)
+      );
+      bot.facing += delta * (1 - Math.exp(-10 * dt));
+    }
+
+    if (bot.grounded) {
+      bot.position.y = source.topY;
+      if (distance <= launchDistance) {
+        bot.grounded = false;
+        bot.verticalVelocity = 9.15;
+      }
+    }
+
+    const oldY = bot.position.y;
+    bot.position.x += bot.velocity.x * dt;
+    bot.position.z += bot.velocity.z * dt;
+
+    let nextY = oldY;
+    let landed = false;
+    if (!bot.grounded) {
+      bot.verticalVelocity -= 20.5 * dt;
+      nextY = oldY + bot.verticalVelocity * dt;
+
+      const insideDestination =
+        Math.abs(bot.position.x - destination.x) < destination.width * 0.5 - 0.32 &&
+        Math.abs(bot.position.z - destination.z) < destination.depth * 0.5 - 0.32;
+
+      if (bot.verticalVelocity <= 0 && insideDestination &&
+          oldY >= destination.topY - 0.12 && nextY <= destination.topY) {
+        nextY = destination.topY;
+        bot.verticalVelocity = 0;
+        bot.grounded = true;
+        bot.platformIndex = destinationIndex;
+        bot.velocity.multiplyScalar(0.38);
+        landed = true;
+      }
+    } else {
+      nextY = source.topY;
+    }
+
+    bot.position.y = nextY;
+    if (bot.position.y < -18) {
+      const start = platforms[0];
+      bot.position.set(bot.lane * 2.5, start.topY, 3.4);
+      bot.velocity.set(0, 0, 0);
+      bot.verticalVelocity = 0;
+      bot.grounded = true;
+      bot.platformIndex = 0;
+      bot.routeDirection = 1;
+    }
+
+    bot.avatar.position.copy(bot.position);
+    bot.avatar.rotation.y = bot.facing;
+    const speed = Math.hypot(bot.velocity.x, bot.velocity.z);
+    const action = bot.grounded ? (speed > 0.25 ? "run" : "idle") : "jump";
+    animateAvatar(bot.avatar, dt, elapsed + bot.phase, speed, bot.grounded, action);
+  }
+}
+
 function updateCamera(dt) {
   cameraTarget.copy(player.position);
   cameraTarget.y += 1.15;
@@ -797,6 +943,9 @@ function applyAddon(addon) {
     setAvatarColors(playerMesh, addon.bodyColor, addon.accentColor);
     for (const remote of remoteMeshes.values()) {
       setAvatarColors(remote.avatar, addon.bodyColor, addon.accentColor);
+    }
+    for (const bot of bots) {
+      setAvatarColors(bot.avatar, addon.bodyColor, addon.accentColor);
     }
   }
 
@@ -1019,12 +1168,13 @@ function animate() {
   const elapsed = clock.elapsedTime;
   updatePlayer(dt, elapsed);
   updateRemotes(dt, elapsed);
+  updateBots(dt, elapsed);
   updateCamera(dt);
   updateCoins(elapsed, dt);
   coords.textContent =
     "X " + player.position.x.toFixed(1) +
     " · Z " + player.position.z.toFixed(1) +
-    " · " + (multiplayer.peers.size + 1) + " PLAYER(S)";
+    " · " + (multiplayer.peers.size + 1) + " PLAYER(S) · " + (botsEnabled ? bots.length : 0) + " BOTS";
   renderer.render(scene, camera);
 }
 animate();
