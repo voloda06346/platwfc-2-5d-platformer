@@ -15,6 +15,7 @@
         <button id="music-toggle" class="menu-button sound-button" type="button" aria-pressed="false">♫ МУЗЫКА: ВЫКЛ</button>
         <button id="twinslop-toggle" class="menu-button twin-button" type="button" aria-pressed="true">♫ TWIN SLOP: ВКЛ</button>
         <button id="bots-toggle" class="menu-button bots-button" type="button" aria-pressed="true">🤖 БОТЫ: ВКЛ</button>
+        <button id="cursor-toggle" class="menu-button cursor-button" type="button" aria-pressed="true">◎ CURSOR: ВКЛ</button>
         <button id="workshop-open" class="menu-button workshop-button" type="button">✦ WORKSHOP</button>
         <div class="status"><i></i><span id="network-status">CONNECTING</span></div>
       </nav>
@@ -45,6 +46,11 @@
       <div class="section-heading"><span>WORLD 01</span><span class="section-stars">✦ ✦ ✦</span><span>ОДИНОЧНАЯ ИГРА / ONLINE</span></div>
       <div class="game-frame">
         <canvas id="game" aria-label="Трёхмерный игровой мир PLATWFC"></canvas>
+        <div id="helper-cursor" class="helper-cursor" hidden aria-hidden="true">
+          <span class="helper-reticle"></span>
+          <span class="helper-caption">КУРСОР-ПОМОЩНИК</span>
+        </div>
+        <div id="interaction-prompt" class="interaction-prompt" hidden>F / X / КЛИК — ВЫВАЛИТЬ СТЕНУ</div>
         <div class="hud">
           <span class="hud-world">WORLD 01</span>
           <span id="coords">X 0 · Z 0</span>
@@ -57,7 +63,7 @@
             <div><button data-key="a" aria-label="Влево">◀</button><button data-key="s" aria-label="Назад">▼</button><button data-key="d" aria-label="Вправо">▶</button></div>
           </div>
           <div class="actions">
-            <div class="action-row"><button data-key="e" class="move-action">DIVE</button><button data-key="q" class="move-action">SLAM</button><button data-key="r" class="move-action">ROLL</button></div>
+            <div class="action-row"><button data-key="e" class="move-action">DIVE</button><button data-key="q" class="move-action">SLAM</button><button data-key="r" class="move-action">ROLL</button><button data-key="f" class="move-action">PUSH</button></div>
             <div class="action-row"><button data-key="space" class="jump">JUMP</button><button data-key="boost" class="boost">RUN</button></div>
           </div>
         </div>
@@ -67,6 +73,7 @@
         <span><b>E</b> ВОЗДУШНЫЙ БРОСОК</span>
         <span><b>Q</b> УДАР ВНИЗ</span>
         <span><b>R</b> КУВЫРОК</span>
+        <span><b>F / X / КЛИК</b> ВЫВАЛИТЬ СТЕНУ · ПРАВЫЙ СТИК — КУРСОР</span>
       </div>
     </section>
 
