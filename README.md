@@ -49,7 +49,11 @@ https://github.com/voloda06346/platwfc-2-5d-platformer
 
 ## Обновить проект без GitHub Desktop и PowerShell
 
-1. Скачай [UPDATE-PLATWFC.bat](https://raw.githubusercontent.com/voloda06346/platwfc-2-5d-platformer/main/UPDATE-PLATWFC.bat).
+Если старый обновлятор уже выдаёт ошибку, скачай [REPAIR-PLATWFC-UPDATER.bat](https://raw.githubusercontent.com/voloda06346/platwfc-2-5d-platformer/main/REPAIR-PLATWFC-UPDATER.bat), положи его рядом с `START-PLATWFC.bat` и запусти двойным щелчком. Он заменит старый обновлятор свежей версией и запустит обновление.
+
+Обычный обновлятор можно скачать отдельно: [UPDATE-PLATWFC.bat](https://raw.githubusercontent.com/voloda06346/platwfc-2-5d-platformer/main/UPDATE-PLATWFC.bat).
+
+1. Положи `UPDATE-PLATWFC.bat` в папку проекта рядом с `START-PLATWFC.bat`.
 2. Положи его в папку проекта рядом с `START-PLATWFC.bat`.
 3. Останови сервер через `Ctrl+C`.
 4. Дважды щёлкни `UPDATE-PLATWFC.bat`.
