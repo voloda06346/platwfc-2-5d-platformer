@@ -17,17 +17,25 @@
       <p class="eyebrow">3D ONLINE PLATFORMER</p>
       <h1>Прыгай в новый<br><span>трёхмерный мир.</span></h1>
       <p>Исследуй настоящую 3D-сцену, прыгай по парящим платформам и подключайся к игрокам через комнаты PLATWFC.</p>
+      <div class="player-tools">
+        <label for="player-name">ТВОЙ НИК</label>
+        <input id="player-name" maxlength="16" autocomplete="nickname" spellcheck="false" value="Player">
+        <button id="apply-name" type="button">ПРИМЕНИТЬ</button>
+      </div>
     </section>
     <section class="game-frame">
       <canvas id="game" aria-label="Трёхмерный игровой мир PLATWFC"></canvas>
       <div class="hud"><span>WORLD 01 · 3D</span><span id="coords">X 0 · Z 0</span><span id="score">COINS 0</span></div>
-      <div class="hint">WASD / СТРЕЛКИ — движение · ПРОБЕЛ — прыжок · SHIFT — ускорение · МЫШЬ — вращение камеры</div>
+      <div class="hint">WASD / СТРЕЛКИ — движение · SHIFT — спринт · SHIFT + SPACE — длинный прыжок · E — бросок в воздухе · Q — удар вниз · R — кувырок · МЫШЬ — камера</div>
       <div class="touch-controls" aria-label="Сенсорное управление">
         <div class="dpad">
           <button data-key="w" aria-label="Вперёд">▲</button>
           <div><button data-key="a" aria-label="Влево">◀</button><button data-key="s" aria-label="Назад">▼</button><button data-key="d" aria-label="Вправо">▶</button></div>
         </div>
-        <div class="actions"><button data-key="space" class="jump">JUMP</button><button data-key="boost" class="boost">RUN</button></div>
+        <div class="actions">
+          <div class="action-row"><button data-key="e" class="move-action">DIVE</button><button data-key="q" class="move-action">SLAM</button><button data-key="r" class="move-action">ROLL</button></div>
+          <div class="action-row"><button data-key="space" class="jump">JUMP</button><button data-key="boost" class="boost">RUN</button></div>
+        </div>
       </div>
     </section>
     <footer><span>PLATWFC NETWORK</span><span>BUILD 0.3.0 · THREE.JS 3D</span></footer>
