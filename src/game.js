@@ -1016,6 +1016,7 @@ function pollGamepad(dt) {
 function refreshAimedWall() {
   aimedWall = null;
   if (!cursorEnabled) return;
+  scene.updateMatrixWorld(true);
   camera.updateMatrixWorld();
   raycaster.setFromCamera(cursorNdc, camera);
   const targets = fallingWalls
