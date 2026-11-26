@@ -1,5 +1,6 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 import { MultiplayerClient } from "./multiplayer.js";
+import { PLATWFCAudio } from "./audio.js";
 
 const canvas = document.querySelector("#game");
 const coords = document.querySelector("#coords");
@@ -243,6 +244,7 @@ function makeAvatar(color = 0xf2a84b, remote = false, name = "Player") {
   const nameTag = createNameTag(name);
   root.add(nameTag.sprite);
   root.userData.nameTag = nameTag;
+  root.userData.appearance = { cloth, accent };
   root.userData.rig = {
     pelvis, spine, chest, head,
     leftUpperArm, leftLowerArm, rightUpperArm, rightLowerArm,
@@ -347,6 +349,7 @@ let jumpQueued = false;
 let actionQueued = null;
 const keys = new Set();
 const multiplayer = new MultiplayerClient();
+const audio = new PLATWFCAudio();
 
 const isLocalHost = ["localhost", "127.0.0.1"].includes(location.hostname);
 const localSocketUrl = `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws`;
