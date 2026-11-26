@@ -207,3 +207,27 @@ html, body {
   color: #9bbad0;
   font-size: 11px;
 }
+
+
+/* Direct links to both game versions */
+#version-links {
+  margin: 10px 0 14px;
+  padding: 9px;
+  border: 1px solid #6a9bc0;
+  background: #102f50;
+  text-align: center;
+}
+#version-links a {
+  display: inline-block;
+  margin: 3px 6px;
+  padding: 7px 10px;
+  border: 1px solid #8bb8d7;
+  background: #1d527a;
+  color: #ffffff;
+  font-weight: bold;
+  text-decoration: none;
+}
+#version-links a:active,
+#version-links a:hover {
+  background: #327cab;
+}
