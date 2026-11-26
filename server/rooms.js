@@ -34,6 +34,16 @@ export class RoomManager {
 
   snapshot(roomId) {
     const room = this.rooms.get(roomId);
-    return room ? [...room.clients.values()].map(c => ({ id: c.id, name: c.name, x: c.state.x, z: c.state.z, y: c.state.y, facing: c.state.facing })) : [];
+    return room ? [...room.clients.values()].map(c => ({
+      id: c.id,
+      name: c.name,
+      x: c.state.x,
+      z: c.state.z,
+      y: c.state.y,
+      facing: c.state.facing,
+      speed: c.state.speed || 0,
+      grounded: c.state.grounded !== false,
+      action: c.state.action || "idle"
+    })) : [];
   }
 }
