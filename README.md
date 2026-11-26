@@ -1,16 +1,34 @@
 # PLATWFC — 2.5D Platformer
 
-Браузерный 2.5D-платформер с планируемым сетевым режимом на собственном сервере PLATWFC.
+Игровой клиент и отдельный realtime-сервер PLATWFC.
 
-## Клиент
-Сейчас в проекте есть интерактивный прототип: движение по WASD/стрелкам и прыжок на пробел.
+## Играть локально
+Открой GitHub Pages после включения **Settings → Pages → Source: GitHub Actions**. Управление: WASD / стрелки, пробел — прыжок.
 
-## GitHub Pages
-В репозитории добавлен workflow `.github/workflows/pages.yml`. В Settings → Pages выбери **Source: GitHub Actions**. После этого workflow автоматически опубликует сайт при push в `main`.
+## Запуск сервера PLATWFC
+Требуется Node.js 20 или новее.
 
-## Сервер PLATWFC
-GitHub Pages обслуживает статические файлы и не запускает Node.js/WebSocket-сервер. Сервер будет отдельным процессом на хостинге с поддержкой Node.js и WebSocket.
+```bash
+cd server
+npm install
+npm start
+```
 
-## Управление
-- WASD / стрелки — движение
-- Пробел — прыжок
+Сервер слушает порт `8080`, WebSocket endpoint — `/ws`, health check — `/health`. Для публикации используй отдельный хостинг, поддерживающий Node.js и WebSocket. GitHub Pages не запускает серверные процессы.
+
+## Подключение клиента к серверу
+После размещения сервера открой клиент со строкой параметров:
+
+```
+https://voloda06346.github.io/platwfc-2-5d-platformer/?server=wss://YOUR-HOST/ws&name=Player&room=lobby
+```
+
+Замени `wss://YOUR-HOST/ws` на WebSocket URL своего сервера. Для локальной проверки используй `ws://localhost:8080/ws` при локальном запуске клиента.
+
+## Протокол v1
+- `join` — вход в комнату (до 16 игроков).
+- `state` — обновление позиции игрока.
+- `peer-joined`, `peer-state`, `peer-left` — события других игроков.
+- `/health` — JSON-статус сервера.
+
+PLATWFC сейчас синхронизирует комнаты и позиции игроков; авторитетная физика, аккаунты и сохранения будут отдельными следующими этапами.
