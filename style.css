@@ -69,6 +69,9 @@ button{cursor:pointer}
 .helper-caption{padding:3px 7px;border:1px solid #d7f9ff80;border-radius:999px;background:#092a42e8;color:#eaffff;font-size:8px;font-weight:1000;letter-spacing:.1em;white-space:nowrap}
 .helper-cursor.is-target .helper-reticle{border-color:#ffe27c;background:#ffd84b55;box-shadow:0 0 0 3px #9a661766,0 0 22px #ffe27c}
 .helper-cursor.is-target .helper-caption{border-color:#ffe27c;color:#fff0b2}
+.helper-cursor.is-object .helper-reticle{border-color:#9cffc6;background:#63e7a855;box-shadow:0 0 0 3px #276f4f66,0 0 22px #9cffc6}
+.helper-cursor.is-object .helper-caption{border-color:#9cffc6;color:#d7ffe6}
+.object-prompt{top:94px;border-color:#9cffc6aa;color:#dbffe8}
 .interaction-prompt{position:absolute;z-index:9;left:50%;top:54px;transform:translateX(-50%);padding:8px 13px;border:1px solid #ffe27caa;border-radius:999px;background:#153651eF;color:#fff1b9;font-size:9px;font-weight:1000;letter-spacing:.08em;white-space:nowrap;pointer-events:none;box-shadow:0 4px 16px #00182766}
 canvas{display:block;width:100%;height:min(61vw,650px);min-height:390px;touch-action:none;outline:none}
 .hud{position:absolute;top:14px;left:15px;right:15px;display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:none}
