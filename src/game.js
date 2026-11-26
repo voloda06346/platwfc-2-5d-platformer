@@ -153,7 +153,11 @@ function addFallingWall(x, z, baseY, width = 3.6, height = 2.6, color = 0x7894a8
     fallTime: 0,
     startX: 0,
     startZ: z,
-    baseZ: z
+    baseZ: z,
+    width,
+    height,
+    depth: 0.68,
+    baseY
   };
   group.traverse(object => {
     if (object.isMesh) {
@@ -776,8 +780,11 @@ function updatePlayer(dt, elapsed) {
   }
 
   const oldY = player.position.y;
+  const previousX = player.position.x;
+  const previousZ = player.position.z;
   player.position.x += player.velocity.x * dt;
   player.position.z += player.velocity.z * dt;
+  resolveWallCollisions(previousX, previousZ);
 
   const gravity = player.action === "longJump" ? 16.5 : player.action === "groundPound" ? 38 : 22;
   player.verticalVelocity -= gravity * dt;
@@ -1056,6 +1063,36 @@ function activateAimedWall() {
   aimedWall.startX = aimedWall.group.rotation.x;
   aimedWall.startZ = aimedWall.group.position.z;
   return true;
+}
+
+function resolveWallCollisions(previousX, previousZ) {
+  for (const wall of fallingWalls) {
+    if (wall.state !== "standing") continue;
+
+    const playerFeet = player.position.y;
+    const playerHead = playerFeet + 2.35;
+    if (playerHead <= wall.baseY || playerFeet >= wall.baseY + wall.height) continue;
+
+    const dx = player.position.x - wall.group.position.x;
+    const dz = player.position.z - wall.group.position.z;
+    const halfWidth = wall.width * 0.5 + 0.42;
+    const halfDepth = wall.depth * 0.5 + 0.38;
+    const overlapX = halfWidth - Math.abs(dx);
+    const overlapZ = halfDepth - Math.abs(dz);
+
+    if (overlapX <= 0 || overlapZ <= 0) continue;
+
+    // Resolve along the shallowest overlap and cancel only that movement axis.
+    if (overlapX < overlapZ) {
+      const side = Math.sign(dx) || Math.sign(previousX - wall.group.position.x) || 1;
+      player.position.x = wall.group.position.x + side * halfWidth;
+      player.velocity.x = 0;
+    } else {
+      const side = Math.sign(dz) || Math.sign(previousZ - wall.group.position.z) || 1;
+      player.position.z = wall.group.position.z + side * halfDepth;
+      player.velocity.z = 0;
+    }
+  }
 }
 
 function updateFallingWalls(dt) {
