@@ -1,6 +1,37 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101827"><title>PLATWFC — 2.5D Platformer</title><link rel="stylesheet" href="./style.css"></head>
-<body><main class="shell"><header><div class="brand">PLAT<span>WFC</span></div><div class="status"><i></i><span id="network-status">OFFLINE PREVIEW</span></div></header>
-<section class="intro"><p class="eyebrow">2.5D ONLINE PLATFORMER</p><h1>Прыгай в новый<br><span>мир вместе.</span></h1><p>Исследуй платформы в одиночку или подключайся к комнате PLATWFC, когда будет запущен сервер.</p></section>
-<section class="game-frame"><canvas id="game" aria-label="Игровой мир PLATWFC"></canvas><div class="hud"><span>WORLD 01</span><span id="coords">X 0 · Z 0</span></div><div class="hint">WASD / ← → — движение&nbsp; · &nbsp;ПРОБЕЛ — прыжок</div></section>
-<footer><span>PLATWFC NETWORK</span><span>BUILD 0.2.0 · MULTIPLAYER CLIENT</span></footer></main><script type="module" src="./src/game.js"></script></body></html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#101827">
+  <title>PLATWFC — 3D Platformer</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand">PLAT<span>WFC</span></div>
+      <div class="status"><i></i><span id="network-status">OFFLINE PREVIEW</span></div>
+    </header>
+    <section class="intro">
+      <p class="eyebrow">3D ONLINE PLATFORMER</p>
+      <h1>Прыгай в новый<br><span>трёхмерный мир.</span></h1>
+      <p>Настоящая 3D-сцена, плавное управление, прыжки по парящим платформам и подготовка к мультиплееру PLATWFC.</p>
+    </section>
+    <section class="game-frame">
+      <canvas id="game" aria-label="Трёхмерный игровой мир PLATWFC"></canvas>
+      <div class="hud"><span>WORLD 01 · 3D</span><span id="coords">X 0 · Z 0</span><span id="score">COINS 0</span></div>
+      <div class="hint">WASD / СТРЕЛКИ — движение · ПРОБЕЛ — прыжок · SHIFT — ускорение · МЫШЬ — вращение камеры</div>
+      <div class="touch-controls" aria-label="Сенсорное управление">
+        <div class="dpad">
+          <button data-key="w" aria-label="Вперёд">▲</button>
+          <div><button data-key="a" aria-label="Влево">◀</button><button data-key="s" aria-label="Назад">▼</button><button data-key="d" aria-label="Вправо">▶</button></div>
+        </div>
+        <div class="actions"><button data-key="space" class="jump">JUMP</button><button data-key="boost" class="boost">RUN</button></div>
+      </div>
+    </section>
+    <footer><span>PLATWFC NETWORK</span><span>BUILD 0.3.0 · THREE.JS 3D</span></footer>
+  </main>
+  <script type="module" src="./src/game.js"></script>
+</body>
+</html>
