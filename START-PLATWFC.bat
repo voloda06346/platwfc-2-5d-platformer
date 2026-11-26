@@ -65,15 +65,7 @@ if errorlevel 1 (
 
 echo Installing/checking dependencies with npm install...
 call npm install
-if errorlevel 1 (
-  set "INSTALL_EXIT=%ERRORLEVEL%"
-  popd
-  echo.
-  echo ERROR: Dependency installation failed with code %INSTALL_EXIT%.
-  echo Check that server\package.json exists and that internet access works.
-  pause
-  exit /b %INSTALL_EXIT%
-)
+if errorlevel 1 goto :install_failed
 
 if not exist "node_modules\ws" (
   popd
@@ -97,3 +89,12 @@ echo.
 echo PLATWFC stopped with exit code %SERVER_EXIT%.
 pause
 exit /b %SERVER_EXIT%
+
+:install_failed
+set "INSTALL_EXIT=%ERRORLEVEL%"
+popd
+echo.
+echo ERROR: Dependency installation failed with code %INSTALL_EXIT%.
+echo Check that server\package.json exists and that internet access works.
+pause
+exit /b %INSTALL_EXIT%
