@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "id": "my-music-mood",
+  "name": "My Music Mood",
+  "author": "Your Name",
+  "version": "1.0.0",
+  "description": "A built-in procedural music mood.",
+  "type": "music",
+  "mood": "adventure"
+}
