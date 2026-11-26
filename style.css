@@ -31,6 +31,8 @@ button{cursor:pointer}
 .sound-button{border-color:#ffd56c70;color:#ffe6a3}
 .twin-button{border-color:#c49cff88;color:#e0caff;background:linear-gradient(135deg,#7147a455,#3a286d88)}
 .twin-button[aria-pressed="false"]{border-color:#ffffff35;color:#9eb2c8;background:#ffffff0d}
+.bots-button{border-color:#7eddbb88;color:#a8f4d3;background:linear-gradient(135deg,#237f7055,#174c6388)}
+.bots-button[aria-pressed="false"]{border-color:#ffffff35;color:#9eb2c8;background:#ffffff0d}
 .workshop-button{border-color:#8ff0bd80;color:#aaffd0;background:#2ba77e25}
 .status{display:flex;align-items:center;gap:8px;margin-left:4px;color:#c4d8e9;font-size:10px;letter-spacing:.1em;white-space:nowrap}
 .status i{display:inline-block;width:8px;height:8px;background:#ffd56c;border-radius:50%;box-shadow:0 0 10px #ffd56c88}
