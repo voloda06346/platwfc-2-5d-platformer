@@ -5,7 +5,7 @@
   var cursor;
   var message;
   var heroX = 70;
-  var heroY = 304;
+  var heroY = 302;
   var velocityX = 0;
   var velocityY = 0;
   var grounded = true;
@@ -59,6 +59,15 @@
     if (velocityX < -4.5) velocityX = -4.5;
 
     heroX += velocityX;
+    for (i = 0; i < walls.length; i++) {
+      if (!walls[i].fallen && !walls[i].falling &&
+          heroY + 48 > walls[i].y && heroY < walls[i].y + 94 &&
+          heroX + 30 > walls[i].x && heroX < walls[i].x + 44) {
+        if (velocityX > 0) heroX = walls[i].x - 30;
+        else if (velocityX < 0) heroX = walls[i].x + 44;
+        velocityX = 0;
+      }
+    }
     if (heroX < 5) { heroX = 5; velocityX = 0; }
     if (heroX > 725) { heroX = 725; velocityX = 0; }
 
