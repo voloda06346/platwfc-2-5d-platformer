@@ -1,0 +1,36 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title>PLATWFC - Выбор версии</title>
+  <style type="text/css">
+    body { margin: 0; padding: 24px; background: #071b30; color: #eef7ff; font-family: Arial, sans-serif; }
+    #page { max-width: 850px; margin: 25px auto; }
+    h1 { color: #fff0bd; font-size: 34px; }
+    #intro { color: #c4d9eb; font-size: 15px; line-height: 1.5; }
+    .choice { display: block; margin: 16px 0; padding: 22px; border: 2px solid #6c9dc5; background: #12395e; color: #fff; text-decoration: none; }
+    .choice strong { display: block; margin-bottom: 8px; color: #ffe49b; font-size: 22px; }
+    .choice span { color: #d2e4f2; font-size: 13px; line-height: 1.5; }
+    .choice:hover { background: #1a4d77; }
+    #normal { border-color: #8ff0bd; }
+    #legacy { border-color: #8ad8f0; }
+    #note { margin-top: 22px; color: #91abc1; font-size: 12px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div id="page">
+    <h1>PLATWFC — ВЫБОР ВЕРСИИ</h1>
+    <div id="intro">Выбери, какую версию игры открыть. У каждой версии отдельный прямой адрес.</div>
+    <a class="choice" id="normal" href="./index.html">
+      <strong>ОБЫЧНАЯ ВЕРСИЯ · 3D</strong>
+      <span>Полная игра на Three.js и WebGL. Для современных браузеров на ПК и телефонах.</span>
+    </a>
+    <a class="choice" id="legacy" href="./legacy.html">
+      <strong>LEGACY · 2.5D</strong>
+      <span>Облегчённая DOM-версия для старых браузеров, включая Wii Internet Channel. Без WebGL и Canvas.</span>
+    </a>
+    <div id="note">Прямые адреса: <a href="./index.html" style="color:#a9f5c9">обычная 3D</a> · <a href="./legacy.html" style="color:#a9e7ff">Legacy 2.5D</a><br>На старом браузере обычная версия может автоматически перенаправить на Legacy.</div>
+  </div>
+</body>
+</html>
