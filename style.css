@@ -29,6 +29,8 @@ button{cursor:pointer}
 .menu-button{border:1px solid #ffffff3a;border-radius:999px;padding:10px 15px;color:white;background:#ffffff13;font-size:10px;font-weight:900;letter-spacing:.09em;transition:transform .16s,background .16s}
 .menu-button:hover{transform:translateY(-2px);background:#ffffff24}
 .sound-button{border-color:#ffd56c70;color:#ffe6a3}
+.twin-button{border-color:#c49cff88;color:#e0caff;background:linear-gradient(135deg,#7147a455,#3a286d88)}
+.twin-button[aria-pressed="false"]{border-color:#ffffff35;color:#9eb2c8;background:#ffffff0d}
 .workshop-button{border-color:#8ff0bd80;color:#aaffd0;background:#2ba77e25}
 .status{display:flex;align-items:center;gap:8px;margin-left:4px;color:#c4d8e9;font-size:10px;letter-spacing:.1em;white-space:nowrap}
 .status i{display:inline-block;width:8px;height:8px;background:#ffd56c;border-radius:50%;box-shadow:0 0 10px #ffd56c88}
