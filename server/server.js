@@ -189,6 +189,15 @@ const http = createServer(async (req, res) => {
 
     if (req.method === "POST") {
       try {
+        const requestOrigin = req.headers.origin;
+        if (requestOrigin && requestOrigin !== url.origin) {
+          sendJson(res, 403, { error: "Cross-origin workshop imports are not allowed" });
+          return;
+        }
+        if (!String(req.headers["content-type"] || "").toLowerCase().includes("application/json")) {
+          sendJson(res, 415, { error: "Workshop imports require application/json" });
+          return;
+        }
         const input = await readJsonBody(req);
         const addon = validateAddon(input);
         await mkdir(DLC_DIR, { recursive: true });
