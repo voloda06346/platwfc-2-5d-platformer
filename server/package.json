@@ -1,0 +1,10 @@
+{
+  "name": "platwfc-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PLATWFC realtime rooms for the 2.5D platformer",
+  "type": "module",
+  "scripts": { "start": "node server.js", "dev": "node --watch server.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": { "ws": "^8.18.0" }
+}
