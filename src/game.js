@@ -249,77 +249,131 @@ function makeAvatar(color = 0xf2a84b, remote = false, name = "Player") {
     pelvis, spine, chest, head,
     leftUpperArm, leftLowerArm, rightUpperArm, rightLowerArm,
     leftUpperLeg, leftLowerLeg, rightUpperLeg, rightLowerLeg,
-    phase: Math.random() * Math.PI * 2
+    phase: Math.random() * Math.PI * 2,
+    wasGrounded: true,
+    landingSquash: 0,
+    takeoffStretch: 0
   };
   return root;
 }
 
 function animateAvatar(avatar, dt, elapsed, speed, grounded, action = "idle") {
   const rig = avatar.userData.rig;
-  rig.phase += dt * (6 + Math.min(speed, 11) * 1.45);
-  const phase = rig.phase;
-  const runBlend = THREE.MathUtils.clamp(speed / 6.5, 0, 1);
-  const sprintBlend = THREE.MathUtils.clamp((speed - 5.5) / 4.5, 0, 1);
-  const swing = Math.sin(phase) * (0.78 * runBlend);
-  const kneeL = Math.max(0, Math.sin(phase + Math.PI * 0.12)) * 0.95 * runBlend;
-  const kneeR = Math.max(0, Math.sin(phase + Math.PI + Math.PI * 0.12)) * 0.95 * runBlend;
+  const safeSpeed = Math.max(0, Number(speed) || 0);
+  rig.phase += dt * (5.8 + Math.min(safeSpeed, 11) * 1.22);
 
-  rig.pelvis.position.y = 0.88 + (grounded && runBlend > 0.05 ? Math.abs(Math.sin(phase * 2)) * 0.045 : 0);
-  rig.spine.rotation.x = -0.08 * sprintBlend;
-  rig.chest.rotation.x = Math.sin(elapsed * 2.3) * 0.025;
-  rig.head.rotation.x = 0;
-  rig.leftUpperLeg.rotation.set(swing, 0, 0);
-  rig.rightUpperLeg.rotation.set(-swing, 0, 0);
-  rig.leftLowerLeg.rotation.x = -kneeL;
-  rig.rightLowerLeg.rotation.x = -kneeR;
-  rig.leftUpperArm.rotation.set(-swing * 0.72, 0, -0.04);
-  rig.rightUpperArm.rotation.set(swing * 0.72, 0, 0.04);
-  rig.leftLowerArm.rotation.x = -0.12;
-  rig.rightLowerArm.rotation.x = -0.12;
+  const runBlend = THREE.MathUtils.clamp(safeSpeed / 6.3, 0, 1);
+  const sprintBlend = THREE.MathUtils.clamp((safeSpeed - 5.2) / 4.2, 0, 1);
+  const swing = Math.sin(rig.phase) * (0.92 * runBlend);
+  const leftKnee = Math.max(0, Math.sin(rig.phase + 0.22)) * 1.08 * runBlend;
+  const rightKnee = Math.max(0, Math.sin(rig.phase + Math.PI + 0.22)) * 1.08 * runBlend;
 
-  if (!grounded && action === "jump") {
-    rig.leftUpperLeg.rotation.x = -0.48;
-    rig.rightUpperLeg.rotation.x = -0.48;
-    rig.leftLowerLeg.rotation.x = 0.7;
-    rig.rightLowerLeg.rotation.x = 0.7;
-    rig.leftUpperArm.rotation.x = -2.1;
-    rig.rightUpperArm.rotation.x = -2.1;
-  } else if (action === "longJump") {
-    rig.spine.rotation.x = -0.38;
-    rig.chest.rotation.x = -0.12;
-    rig.leftUpperArm.rotation.x = 1.65;
-    rig.rightUpperArm.rotation.x = 1.65;
-    rig.leftLowerArm.rotation.x = -0.35;
-    rig.rightLowerArm.rotation.x = -0.35;
-    rig.leftUpperLeg.rotation.x = -0.35;
-    rig.rightUpperLeg.rotation.x = -0.35;
-    rig.leftLowerLeg.rotation.x = 0.5;
-    rig.rightLowerLeg.rotation.x = 0.5;
-  } else if (action === "dive") {
-    rig.spine.rotation.x = -0.72;
-    rig.chest.rotation.x = -0.18;
-    rig.leftUpperArm.rotation.x = -1.25;
-    rig.rightUpperArm.rotation.x = -1.25;
-    rig.leftUpperArm.rotation.z = -0.22;
-    rig.rightUpperArm.rotation.z = 0.22;
-    rig.leftUpperLeg.rotation.x = 0.55;
-    rig.rightUpperLeg.rotation.x = 0.55;
-  } else if (action === "groundPound") {
-    rig.spine.rotation.x = 0.38;
-    rig.leftUpperArm.rotation.x = -2.45;
-    rig.rightUpperArm.rotation.x = -2.45;
-    rig.leftUpperLeg.rotation.x = -0.45;
-    rig.rightUpperLeg.rotation.x = -0.45;
-    rig.leftLowerLeg.rotation.x = 0.8;
-    rig.rightLowerLeg.rotation.x = 0.8;
-  } else if (action === "roll") {
-    rig.spine.rotation.x = -0.9;
-    rig.chest.rotation.x = -0.2;
-    rig.leftUpperArm.rotation.x = -1.4;
-    rig.rightUpperArm.rotation.x = -1.4;
-    rig.leftUpperLeg.rotation.x = 0.8;
-    rig.rightUpperLeg.rotation.x = -0.8;
+  const pose = {
+    pelvisY: 0.88 + (grounded && runBlend > 0.05 ? Math.abs(Math.sin(rig.phase * 2)) * 0.055 : 0),
+    spineX: -0.035 - 0.17 * sprintBlend,
+    chestX: Math.sin(elapsed * 2.5) * 0.022,
+    headX: 0,
+    headZ: Math.sin(rig.phase * 0.5) * 0.025 * runBlend,
+    leftUpperLegX: swing,
+    rightUpperLegX: -swing,
+    leftLowerLegX: -leftKnee,
+    rightLowerLegX: -rightKnee,
+    leftUpperArmX: -swing * 0.78 - 0.06,
+    rightUpperArmX: swing * 0.78 - 0.06,
+    leftLowerArmX: -0.18,
+    rightLowerArmX: -0.18,
+    leftUpperArmZ: -0.045,
+    rightUpperArmZ: 0.045
+  };
+
+  if (!grounded && (action === "jump" || action === "none" || action === "idle" || action === "sprint" || action === "run")) {
+    // Arms open and knees tuck during a buoyant, readable jump pose.
+    pose.spineX = -0.12;
+    pose.chestX = -0.08;
+    pose.leftUpperArmX = -1.9;
+    pose.rightUpperArmX = -1.9;
+    pose.leftLowerArmX = -0.3;
+    pose.rightLowerArmX = -0.3;
+    pose.leftUpperLegX = -0.46;
+    pose.rightUpperLegX = -0.46;
+    pose.leftLowerLegX = 0.72;
+    pose.rightLowerLegX = 0.72;
   }
+
+  if (action === "longJump") {
+    pose.spineX = -0.42;
+    pose.chestX = -0.14;
+    pose.leftUpperArmX = 1.45;
+    pose.rightUpperArmX = 1.45;
+    pose.leftLowerArmX = -0.38;
+    pose.rightLowerArmX = -0.38;
+    pose.leftUpperLegX = -0.38;
+    pose.rightUpperLegX = -0.38;
+    pose.leftLowerLegX = 0.58;
+    pose.rightLowerLegX = 0.58;
+  } else if (action === "dive") {
+    pose.spineX = -0.76;
+    pose.chestX = -0.2;
+    pose.leftUpperArmX = -1.38;
+    pose.rightUpperArmX = -1.38;
+    pose.leftUpperArmZ = -0.24;
+    pose.rightUpperArmZ = 0.24;
+    pose.leftUpperLegX = 0.62;
+    pose.rightUpperLegX = 0.62;
+  } else if (action === "groundPound") {
+    pose.spineX = 0.4;
+    pose.leftUpperArmX = -2.35;
+    pose.rightUpperArmX = -2.35;
+    pose.leftUpperLegX = -0.5;
+    pose.rightUpperLegX = -0.5;
+    pose.leftLowerLegX = 0.86;
+    pose.rightLowerLegX = 0.86;
+  } else if (action === "roll") {
+    pose.spineX = -0.92;
+    pose.chestX = -0.22;
+    pose.leftUpperArmX = -1.45;
+    pose.rightUpperArmX = -1.45;
+    pose.leftUpperLegX = 0.82;
+    pose.rightUpperLegX = -0.82;
+  }
+
+  // Damped joint motion prevents hard pose snapping between animation states.
+  const blend = 1 - Math.exp(-17 * dt);
+  rig.pelvis.position.y += (pose.pelvisY - rig.pelvis.position.y) * blend;
+  rig.spine.rotation.x += (pose.spineX - rig.spine.rotation.x) * blend;
+  rig.chest.rotation.x += (pose.chestX - rig.chest.rotation.x) * blend;
+  rig.head.rotation.x += (pose.headX - rig.head.rotation.x) * blend;
+  rig.head.rotation.z += (pose.headZ - rig.head.rotation.z) * blend;
+
+  const jointTargets = [
+    [rig.leftUpperLeg, "x", pose.leftUpperLegX],
+    [rig.rightUpperLeg, "x", pose.rightUpperLegX],
+    [rig.leftLowerLeg, "x", pose.leftLowerLegX],
+    [rig.rightLowerLeg, "x", pose.rightLowerLegX],
+    [rig.leftUpperArm, "x", pose.leftUpperArmX],
+    [rig.rightUpperArm, "x", pose.rightUpperArmX],
+    [rig.leftLowerArm, "x", pose.leftLowerArmX],
+    [rig.rightLowerArm, "x", pose.rightLowerArmX],
+    [rig.leftUpperArm, "z", pose.leftUpperArmZ],
+    [rig.rightUpperArm, "z", pose.rightUpperArmZ]
+  ];
+  for (const [bone, axis, target] of jointTargets) {
+    bone.rotation[axis] += (target - bone.rotation[axis]) * blend;
+  }
+
+  // A light spring on take-off and a quick squash on landing sell the jump.
+  if (!grounded && rig.wasGrounded) rig.takeoffStretch = 1;
+  if (grounded && !rig.wasGrounded) rig.landingSquash = 1;
+  rig.wasGrounded = grounded;
+  rig.takeoffStretch *= Math.exp(-dt * 8.5);
+  rig.landingSquash *= Math.exp(-dt * 12);
+  const stretch = rig.takeoffStretch;
+  const squash = rig.landingSquash;
+  avatar.scale.set(
+    1 + squash * 0.045 - stretch * 0.018,
+    1 - squash * 0.13 + stretch * 0.105,
+    1 + squash * 0.045 - stretch * 0.018
+  );
 }
 
 const params = new URLSearchParams(location.search);
@@ -350,6 +404,18 @@ let actionQueued = null;
 const keys = new Set();
 const multiplayer = new MultiplayerClient();
 const audio = new PLATWFCAudio();
+let twinSlopEnabled = true;
+const twinSlopButton = document.querySelector("#twinslop-toggle");
+function updateTwinSlopButton() {
+  if (!twinSlopButton) return;
+  twinSlopButton.textContent = twinSlopEnabled ? "♫ TWIN SLOP: ВКЛ" : "♫ TWIN SLOP: ВЫКЛ";
+  twinSlopButton.setAttribute("aria-pressed", String(twinSlopEnabled));
+}
+twinSlopButton?.addEventListener("click", () => {
+  twinSlopEnabled = !twinSlopEnabled;
+  updateTwinSlopButton();
+});
+updateTwinSlopButton();
 
 const isLocalHost = ["localhost", "127.0.0.1"].includes(location.hostname);
 const localSocketUrl = `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws`;
@@ -392,10 +458,15 @@ function normalizeKey(key) {
   const lower = key.toLowerCase();
   return keyAliases[lower] || lower;
 }
+function queueJump() {
+  if (jumpQueued) return;
+  jumpQueued = true;
+  if (player.grounded && twinSlopEnabled) void audio.playJumpCue();
+}
 addEventListener("keydown", event => {
   const key = normalizeKey(event.key);
   if (["w", "a", "s", "d", "space", "boost", "crouch", "q", "e", "r"].includes(key)) event.preventDefault();
-  if (key === "space" && !keys.has("space")) jumpQueued = true;
+  if (key === "space" && !keys.has("space")) queueJump();
   if ((key === "q" || key === "e" || key === "r") && !keys.has(key)) actionQueued = key;
   keys.add(key);
 });
@@ -406,7 +477,7 @@ document.querySelectorAll("[data-key]").forEach(button => {
   const key = button.dataset.key;
   const down = event => {
     event.preventDefault();
-    if (key === "space" && !keys.has("space")) jumpQueued = true;
+    if (key === "space" && !keys.has("space")) queueJump();
     if ((key === "q" || key === "e" || key === "r") && !keys.has(key)) actionQueued = key;
     keys.add(key);
   };
