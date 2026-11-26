@@ -572,9 +572,11 @@ function updateCursorToggleButton() {
   cursorToggleButton.setAttribute("aria-pressed", String(cursorEnabled));
   gameFrame?.classList.toggle("cursor-helper-active", cursorEnabled);
   if (!cursorEnabled) {
+    releaseObject();
     if (helperCursorElement) helperCursorElement.hidden = true;
     if (interactionPromptElement) interactionPromptElement.hidden = true;
     aimedWall = null;
+    aimedObject = null;
   } else if (helperCursorElement && cursorVisible) {
     helperCursorElement.hidden = false;
   }
@@ -995,6 +997,7 @@ function refreshAimedTarget() {
 
   if (helperCursorElement) {
     helperCursorElement.classList.toggle("is-target", Boolean(aimedWall || aimedObject));
+    helperCursorElement.classList.toggle("is-object", Boolean(aimedObject || heldObject));
     helperCursorElement.hidden = !cursorEnabled || !cursorVisible;
     const frameRect = gameFrame.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
@@ -1426,7 +1429,7 @@ checkDataButton?.addEventListener("click", async () => {
   }
   checkDataButton.disabled = true;
   dataStatus.textContent = "Проверяем файлы игры…";
-  const files = ["/", "/style.css", "/src/game.js", "/src/audio.js", "/src/multiplayer.js"];
+  const files = ["/", "/style.css", "/src/game.js", "/src/audio.js", "/src/multiplayer.js", "/src/bots.js", "/legacy.html", "/legacy.js", "/legacy-bots.js"];
   try {
     const results = await Promise.all(files.map(async file => {
       const response = await fetch(file, { method: "HEAD", cache: "no-store" });
