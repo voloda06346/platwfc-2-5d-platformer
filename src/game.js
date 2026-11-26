@@ -130,10 +130,10 @@ function addFallingWall(x, z, baseY, width = 3.6, height = 2.6, color = 0x7894a8
 
   // Bright centre badge marks this as a pushable, interactive wall.
   const badge = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.56, 0.07), glow);
-  badge.position.set(0, height * 0.56, -0.28);
+  badge.position.set(0, height * 0.56, 0.28);
   group.add(badge);
   const badgeDot = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 10), glow);
-  badgeDot.position.set(0, height * 0.56, -0.36);
+  badgeDot.position.set(0, height * 0.56, 0.36);
   group.add(badgeDot);
 
   group.position.set(x, baseY, z);
@@ -676,7 +676,7 @@ canvas.addEventListener("pointermove", event => {
   if (pointerMoved) cameraYaw -= delta * 0.006;
 });
 canvas.addEventListener("pointerup", event => {
-  if (dragging && !pointerMoved && event.pointerType !== "mouse" || dragging && !pointerMoved && event.button === 0) {
+  if (dragging && !pointerMoved && event.button === 0) {
     refreshAimedWall();
     activateAimedWall();
   }
@@ -1043,7 +1043,7 @@ function refreshAimedWall() {
     if (caption) caption.textContent = aimedWall ? "НАЖМИ F / X" : "КУРСОР-ПОМОЩНИК";
   }
   if (interactionPromptElement) {
-    interactionPromptElement.hidden = !aimedWall || !cursorEnabled;
+    interactionPromptElement.hidden = !aimedWall || !cursorEnabled || !cursorVisible;
     if (aimedWall) interactionPromptElement.textContent = "F / X / КЛИК — ВЫВАЛИТЬ СТЕНУ";
   }
 }
