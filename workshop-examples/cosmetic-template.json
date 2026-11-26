@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "id": "my-custom-suit",
+  "name": "My Custom Suit",
+  "author": "Your Name",
+  "version": "1.0.0",
+  "description": "My own character colors.",
+  "type": "cosmetic",
+  "bodyColor": "#329f9a",
+  "accentColor": "#ffe17c"
+}
