@@ -83,17 +83,54 @@ docker compose up -d --build
 docker compose down
 ```
 
-## Локальная разработка без Docker
+## Разработка на Windows
 
-Требуется Node.js 20 или новее:
+Linux для обычной разработки не нужен. Установи Node.js 20 или новее и Git.
 
-```bash
-cd server
+Открой PowerShell в папке проекта (после клонирования репозитория):
+
+```powershell
+cd .\server
 npm install
 npm start
 ```
 
-Локальный WebSocket endpoint: `ws://localhost:8080/ws`. Health endpoint: `http://localhost:8080/health`.
+Сервер должен показать, что слушает порт 8080. В другом окне PowerShell проверь:
+
+```powershell
+Invoke-RestMethod http://localhost:8080/health
+```
+
+Локальные адреса:
+- HTTP проверка: `http://localhost:8080/health`
+- WebSocket: `ws://localhost:8080/ws`
+
+Остановить сервер можно сочетанием `Ctrl+C`.
+
+## Docker Desktop на Windows
+
+Для запуска контейнерной сборки установи Docker Desktop для Windows и включи Linux containers (обычно через WSL 2). В PowerShell из корня репозитория выполни:
+
+```powershell
+Copy-Item .env.example .env
+notepad .env
+```
+
+Впиши собственный домен и email в `.env`, затем:
+
+```powershell
+docker compose up -d --build
+docker compose ps
+docker compose logs -f server caddy
+```
+
+Это полный вариант со входом через Caddy на портах 80/443 и автоматическим HTTPS. Для получения сертификата домен должен указывать на эту машину, а входящие TCP-порты 80 и 443 должны быть доступны извне. Не публикуй домашний IP в чате или публичных сообщениях. Для постоянно доступного публичного сервера надёжнее использовать отдельную серверную машину; обычный ПК должен оставаться включённым и иметь стабильное соединение.
+
+Остановить контейнеры:
+
+```powershell
+docker compose down
+```
 
 ## Протокол v1
 
