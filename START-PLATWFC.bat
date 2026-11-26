@@ -3,9 +3,9 @@ setlocal EnableExtensions
 title PLATWFC - LOCAL SERVER
 
 set "ROOT=%~dp0"
-set "SERVER_DIR=%ROOT%server\"
-set "SERVER_FILE=%SERVER_DIR%server.js"
-set "PACKAGE_FILE=%SERVER_DIR%package.json"
+set "SERVER_DIR=%ROOT%server"
+set "SERVER_FILE=%SERVER_DIR%\server.js"
+set "PACKAGE_FILE=%SERVER_DIR%\package.json"
 
 echo.
 echo  ========================================
@@ -23,7 +23,7 @@ if not exist "%SERVER_FILE%" (
   echo.
   echo Make sure this folder contains a "server" folder
   echo with server.js and package.json inside it.
-  echo You can inspect the project files here:
+  echo Project files:
   echo https://github.com/voloda06346/platwfc-2-5d-platformer/tree/main/server
   echo.
   pause
@@ -53,16 +53,30 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo Installing/checking dependencies...
-call npm --prefix "%SERVER_DIR%" install
+echo.
+echo Changing directory to the server folder...
+pushd "%SERVER_DIR%"
 if errorlevel 1 (
-  echo.
-  echo ERROR: Dependency installation failed.
+  echo ERROR: Could not enter the server folder.
+  echo Folder: "%SERVER_DIR%"
   pause
   exit /b 1
 )
 
-if not exist "%SERVER_DIR%node_modules\ws" (
+echo Installing/checking dependencies with npm install...
+call npm install
+if errorlevel 1 (
+  set "INSTALL_EXIT=%ERRORLEVEL%"
+  popd
+  echo.
+  echo ERROR: Dependency installation failed with code %INSTALL_EXIT%.
+  echo Check that server\package.json exists and that internet access works.
+  pause
+  exit /b %INSTALL_EXIT%
+)
+
+if not exist "node_modules\ws" (
+  popd
   echo ERROR: The ws package is missing after npm install.
   pause
   exit /b 1
@@ -77,6 +91,7 @@ echo.
 
 node "%SERVER_FILE%"
 set "SERVER_EXIT=%ERRORLEVEL%"
+popd
 
 echo.
 echo PLATWFC stopped with exit code %SERVER_EXIT%.
