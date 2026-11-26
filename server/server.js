@@ -25,7 +25,8 @@ const PUBLIC_FILES = new Set([
   "/legacy.html",
   "/legacy.css",
   "/legacy.js",
-  "/legacy-bots.js"
+  "/legacy-bots.js",
+  "/versions.html"
 ]);
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
