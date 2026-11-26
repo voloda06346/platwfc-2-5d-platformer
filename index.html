@@ -1,23 +1,6 @@
 <!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#101827">
-  <title>PLATWFC — 2.5D Platformer</title>
-  <link rel="stylesheet" href="./style.css">
-</head>
-<body>
-  <main class="shell">
-    <header><div class="brand">PLAT<span>WFC</span></div><div class="status"><i></i> CLIENT PREVIEW</div></header>
-    <section class="intro"><p class="eyebrow">2.5D ONLINE PLATFORMER</p><h1>Прыгай в новый<br><span>мир вместе.</span></h1><p>Мультиплеерный платформер на Three.js. Серверная система PLATWFC в разработке.</p></section>
-    <section class="game-frame">
-      <canvas id="game" aria-label="Предпросмотр игрового мира"></canvas>
-      <div class="hud"><span>WORLD 01</span><span id="coords">X 0 · Z 0</span></div>
-      <div class="hint">WASD / ← → — движение&nbsp; · &nbsp;ПРОБЕЛ — прыжок</div>
-    </section>
-    <footer><span>PLATWFC NETWORK</span><span>BUILD 0.1.0 · GITHUB PAGES</span></footer>
-  </main>
-  <script type="module" src="./src/game.js"></script>
-</body>
-</html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101827"><title>PLATWFC — 2.5D Platformer</title><link rel="stylesheet" href="./style.css"></head>
+<body><main class="shell"><header><div class="brand">PLAT<span>WFC</span></div><div class="status"><i></i><span id="network-status">OFFLINE PREVIEW</span></div></header>
+<section class="intro"><p class="eyebrow">2.5D ONLINE PLATFORMER</p><h1>Прыгай в новый<br><span>мир вместе.</span></h1><p>Исследуй платформы в одиночку или подключайся к комнате PLATWFC, когда будет запущен сервер.</p></section>
+<section class="game-frame"><canvas id="game" aria-label="Игровой мир PLATWFC"></canvas><div class="hud"><span>WORLD 01</span><span id="coords">X 0 · Z 0</span></div><div class="hint">WASD / ← → — движение&nbsp; · &nbsp;ПРОБЕЛ — прыжок</div></section>
+<footer><span>PLATWFC NETWORK</span><span>BUILD 0.2.0 · MULTIPLAYER CLIENT</span></footer></main><script type="module" src="./src/game.js"></script></body></html>
