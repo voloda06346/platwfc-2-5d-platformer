@@ -9,6 +9,7 @@ export class PLATWFCAudio {
     this.playing = false;
     this.mood = "adventure";
     this.bpm = 116;
+    this.jumpCueStep = 0;
     this.patterns = {
       adventure: {
         root: 65,
@@ -123,6 +124,57 @@ export class PLATWFCAudio {
       this.tone(chord, time, beatDuration * 0.52, "sine", 0.035, 1800);
     }
     this.step++;
+  }
+
+  async playJumpCue() {
+    try {
+      await this.ensureContext();
+    } catch (error) {
+      // Keep gameplay working on browsers without Web Audio support.
+      return false;
+    }
+
+    const ctx = this.context;
+    const start = ctx.currentTime + 0.006;
+    const notes = [78, 81, 83, 76];
+    const note = notes[this.jumpCueStep++ % notes.length];
+
+    // Short sub-kick gives every jump a punchy phonk-style hit.
+    const kick = ctx.createOscillator();
+    const kickGain = ctx.createGain();
+    kick.type = "sine";
+    kick.frequency.setValueAtTime(142, start);
+    kick.frequency.exponentialRampToValueAtTime(46, start + 0.13);
+    kickGain.gain.setValueAtTime(0.0001, start);
+    kickGain.gain.exponentialRampToValueAtTime(0.19, start + 0.008);
+    kickGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.17);
+    kick.connect(kickGain);
+    kickGain.connect(this.master);
+    kick.start(start);
+    kick.stop(start + 0.19);
+
+    // Two detuned metallic partials create an original cowbell-like stab.
+    for (const partial of [{ ratio: 1, volume: 0.075 }, { ratio: 1.49, volume: 0.032 }]) {
+      const bell = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const envelope = ctx.createGain();
+      bell.type = "square";
+      bell.frequency.setValueAtTime(this.midiFrequency(note) * partial.ratio, start);
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(1150 + this.jumpCueStep * 18, start);
+      filter.Q.setValueAtTime(2.6, start);
+      envelope.gain.setValueAtTime(0.0001, start);
+      envelope.gain.exponentialRampToValueAtTime(partial.volume, start + 0.008);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, start + 0.19);
+      bell.connect(filter);
+      filter.connect(envelope);
+      envelope.connect(this.master);
+      bell.start(start);
+      bell.stop(start + 0.21);
+    }
+
+    this.noiseHit(start, 0.045, 2600, 0.014);
+    return true;
   }
 
   async start() {
