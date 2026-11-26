@@ -81,7 +81,12 @@ function addCoin(x, z, y) {
   coin.rotation.x = Math.PI / 2;
   coin.castShadow = true;
   world.add(coin);
-  coins.push({ mesh: coin, collected: false, phase: Math.random() * Math.PI * 2 });
+  coins.push({
+    mesh: coin,
+    baseY: y,
+    collected: false,
+    phase: Math.random() * Math.PI * 2
+  });
 }
 
 addPlatform(0, 2, 10, 10, 0, 0x62bd83);
@@ -194,16 +199,22 @@ let jumpQueued = false;
 const keys = new Set();
 const multiplayer = new MultiplayerClient();
 const params = new URLSearchParams(location.search);
-const serverUrl = params.get("server");
+const isLocalHost = ["localhost", "127.0.0.1"].includes(location.hostname);
+const localSocketUrl = `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws`;
+const serverUrl = params.get("server") || (isLocalHost ? localSocketUrl : "");
 
 if (serverUrl) {
+  net.textContent = "CONNECTING TO PLATWFC";
   multiplayer.connect(serverUrl, {
     name: params.get("name") || "Player",
     room: params.get("room") || "lobby"
   });
-  net.textContent = "CONNECTING TO PLATWFC";
+} else {
+  net.textContent = "OFFLINE PREVIEW";
 }
+multiplayer.addEventListener("connecting", () => { net.textContent = "CONNECTING TO PLATWFC"; });
 multiplayer.addEventListener("connected", () => { net.textContent = "PLATWFC CONNECTED"; });
+multiplayer.addEventListener("connection-error", () => { net.textContent = "CONNECTION ERROR"; });
 multiplayer.addEventListener("disconnected", () => { net.textContent = "PLATWFC OFFLINE"; });
 
 const keyAliases = {
@@ -279,8 +290,8 @@ function updatePlayer(dt, elapsed) {
   rightDirection.set(Math.cos(cameraYaw), 0, -Math.sin(cameraYaw));
   moveDirection.set(0, 0, 0);
   if (inputLength > 0) {
-    moveDirection.addScaledVector(rightDirection, inputX / Math.max(1, inputLength));
-    moveDirection.addScaledVector(forwardDirection, inputZ / Math.max(1, inputLength));
+    moveDirection.addScaledVector(rightDirection, inputX / inputLength);
+    moveDirection.addScaledVector(forwardDirection, inputZ / inputLength);
     moveDirection.normalize();
     const desiredVelocity = moveDirection.multiplyScalar(maxSpeed);
     const response = 1 - Math.exp(-11.5 * dt);
@@ -387,7 +398,7 @@ function updateCoins(elapsed, dt) {
   for (const coin of coins) {
     if (coin.collected) continue;
     coin.mesh.rotation.y += dt * 2.4;
-    coin.mesh.position.y += Math.sin(elapsed * 2.3 + coin.phase) * 0.0015;
+    coin.mesh.position.y = coin.baseY + Math.sin(elapsed * 2.3 + coin.phase) * 0.16;
     const dx = player.position.x - coin.mesh.position.x;
     const dz = player.position.z - coin.mesh.position.z;
     const dy = player.position.y + 1 - coin.mesh.position.y;
